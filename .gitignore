@@ -1,0 +1,25 @@
+# Group repositories — independent GitHub repos placed alongside on disk.
+# The root repo tracks ONLY the aggregation plane (docs, designs, backlog,
+# operator env template, Makefile); the groups carry their own code planes.
+/sentin8/
+/bank8/
+/hotel8/
+/trade8/
+/bill8/
+/email8/
+/exchange8/
+/health8/
+
+# Local environment (never commit secrets/DSNs)
+/.env
+/.env.new-backup
+
+# Temporary files (AGENTS.md discipline: scratch under .tmp/, never tracked)
+/.tmp/
+/.run/
+
+# Editor / OS noise
+.DS_Store
+*.swp
+.idea/
+.vscode/
