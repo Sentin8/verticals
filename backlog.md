@@ -121,6 +121,29 @@ prerequisites — `sentin8-captain/tofu/README.md`), FLEET-7.
 | FLEET-6 | E2E acceptance (docker backend): 2-machine dev fleet → forced saturation → provision (macvlan container) → new captain registers + enrollment record appears → remote-spawn a service onto it → proxy round-robins across machines → drain + idle → LIFO deprovision with graceful leave. Requires the macvlan network + sentin8 image prerequisites (tofu/README.md). | P0 | M | DESIGN §11.8 |
 | FLEET-7 | Fleet status polish: `captain machines`/autoscaler output shows enrollment record freshness + placement pins per service; edge/DNS story documented (operator LB → edge machine(s)). | P2 | S | DESIGN §11.7 |
 
+## Open (WEB — public websites: sentin8.dev + {vertical}.dev)
+
+Design of record: `design/sentin8-websites-design.md` (WEB). Framework
+decided 2026-10-15: Docusaurus v3, per-org site repos, GitHub Pages.
+Build order: WEB-1 (engine) → WEB-2 (sentin8.dev) → WEB-9 (CI lane) →
+WEB-3 (bank8 exemplar) → WEB-4…WEB-8 (remaining verticals) → WEB-10
+(domains, operator).
+
+| ID | Story | Est | Source |
+|---|---|---|---|
+| ✅ WEB-1 | Engine repo `sentin8/sentin8-site-engine` (`@sentin8/site-engine`): `makeSiteConfig`/`makeSidebars` factories, theme.css (Inter, glass, Royal Gold accent, dark-first, WCAG AA), MDX components (`Landing`, `SecurityPillars`, `ServiceGrid`, `ApiTable`, `CodeTabs`, `CrossSiteLink`, `ProvenanceNote`, …), `harvest.mjs` (local-sibling → raw.githubusercontent fallback; missing remote fails the build), `new-site.mjs` scaffolder; npm package tagged `site-engine-v0.1.0`. **Done 2026-10-15: engine shipped source-exported (`exports` map, zero build step — JSX-free components compile inside node_modules); node:test suite green (config/sidebar factories); harvester emits `mdx: format: md` frontmatter (Docusaurus 3.10 reads `frontMatter.mdx.format`) so raw maintainer HTML never breaks MDX; scaffolder validates end-to-end on both sites.** | L | WEB §5 |
+| ✅ WEB-2 | `sentin8/sentin8-site` (sentin8.dev): landing with all 17 services + starters + apps + SDKs + vertical showcase; `/docs/security` five pillars; `/docs/services/{svc}` ×19 with use cases + API tables + harvested reference; `/docs/developers` + remote-ui, `/docs/samples`; `site.json` inventory. **Done 2026-10-15: build green (`onBrokenLinks: throw`, 0 failures), 92 harvested reference pages with Mermaid rendering verified in served HTML; landing verified in browser (hero, cards, pillars, showcase).** | L | WEB §4.4 |
+| ✅ WEB-3 | `bank8/bank8-site` (bank8.dev): landing; `/docs/products/{ledger,payments,fdx,reporting,risk,compliance}` with detailed use cases + API tables; `/docs/apps/{ebank,efintech,eteller,admin}`; `/docs/sdk`, `/docs/security` (banking invariants), `/docs/developers`, `/docs/samples`; cross-vertical showcase (hotel8/bill8 → payments). **Done 2026-10-15: build green, 42 harvested reference pages; cross-site showcase cards + bank8 invariants authored.** | M | WEB §4.5 |
+| WEB-4 | `hotel8/hotel8-site` (hotel8.dev): 6 services (pms, pos, upsell, distrib, meta, loyalty), 6 apps, SDK page, security, samples, cross-refs (payments → bank8.dev). Scaffold via `new-site.mjs` + author content per WEB §4.5. | M | WEB §4.5 |
+| WEB-5 | `exchange8/exchange8-site` (exchange8.dev): 14 services (gateway, md, me, oms, sor, clearing, settlement, margin, risk, rfq, refdata, regulatory, surveillance, vfeeds), eExchange app, SDK, security, samples. | M | WEB §4.5 |
+| WEB-6 | `trade8/trade8-site` (trade8.dev): 6 services (desk, router, risk, feed, bars, pnl), eTrader app, SDK, security, samples. | S | WEB §4.5 |
+| WEB-7 | `bill8/bill8-site` (bill8.dev): 8 services (merchants, payments, checkout, billing, ledger, webhooks, risk, reporting), 4 apps, SDK, security, samples; cross-refs (payments → bank8.dev). | M | WEB §4.5 |
+| WEB-8 | `email8/email8-site` (email8.dev): 4 services (mta, store, access, gate), webmail app, SDK, security, samples. | S | WEB §4.5 |
+| ✅ WEB-9 | `site.yml` reusable workflow in `Sentin8/sentin8-ci` (node 24, npm ci, harvest, build, Pages deploy) + thin callers in all site repos + weekly rebuild schedule (harvest refresh); `ci-v1` retag. **Done 2026-10-15: `site.yml` shipped (build + deploy jobs, Pages OIDC permissions, PR mode = build-check only) + callers in sentin8-site and bank8-site with weekly harvest-refresh schedules; ci README updated. `ci-v1` retag lands with the next ci-repo push (operator).** | M | WEB §6 |
+| WEB-10 | Operator: register/point `sentin8.dev` + 6 `{vertical}.dev` domains at GitHub Pages custom domains; enable HTTPS enforcement. Site repos carry `static/CNAME`; DNS records are the operator step. | S | WEB §6 |
+
+---
+
 ## Open (post-split follow-ups)
 
 | ID | Story | Est | Source |

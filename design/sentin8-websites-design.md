@@ -1,0 +1,317 @@
+# sentin8 — Public Websites Design (WEB): `{vertical}.dev` + `sentin8.dev`
+
+> Design of record for the public-facing product/developer websites: one
+> site per vertical at `https://{vertical}.dev`, one platform site at
+> `https://sentin8.dev`, a shared site engine, and the CI lane that builds
+> and deploys them. Decided 2026-10-15 (framework Docusaurus v3, per-org
+> site repos, GitHub Pages hosting — confirmed by the owner).
+
+## 1. Scope & Context
+
+### 1.1 Problem
+
+The tree ships ~98 public repositories whose documentation (the
+`README.md`/`DESIGN.md`/`BUSINESS.md` trio + canonical `SECURITY.md`,
+366 files, 334 Mermaid diagrams) is written for maintainers inside each
+repo. There is no public, curated, marketing-grade surface that:
+
+- explains each **product, service, and app** in detail for developers
+  and users,
+- highlights the platform's **security model** (its main differentiator),
+- shows **APIs, Remote UIs (RFW), and sample code** per product,
+- lets **verticals reference each other** (e.g. hotel8/bill8 payments →
+  bank8.dev/products/payments), and
+- funnels a visitor from "what is this" to "how do I build on it".
+
+### 1.2 Goals
+
+1. One website per vertical (`{vertical}.dev`) + one platform website
+   (`sentin8.dev`), all static, fast, WCAG AA, dark-mode-first.
+2. First page of each site details **all services, apps, and SDKs** of
+   that vertical/platform as card grids linking to detail pages.
+3. Each product gets as many pages as it needs: overview, detailed use
+   cases, API surface, RFW admin UI, architecture (rendered from the
+   repo's own docs), business rules, changelog.
+4. A prominent **security** section per site (the five pillars on
+   sentin8.dev; each vertical inherits and links to them).
+5. **Cross-vertical references** render as cross-site links (absolute
+   `https://{other}.dev/...` URLs).
+6. Docs never trail code: architecture pages are **harvested at build
+   time** from the public repos (the repos remain the single source of
+   truth — sites never fork their content).
+7. Every site builds and deploys through the shared CI lane
+   (`Sentin8/sentin8-ci`, `site.yml`), same as every other repo class.
+
+### 1.3 Out of scope
+
+- Live API playgrounds (need running instances; a future page may link
+  to public demo instances — open question OQ-2).
+- i18n (Docusaurus supports it; deferred — OQ-3).
+- Analytics (no third-party trackers by default — OQ-1).
+- `health8` website: the vertical is a design stub (no units) — no site
+  repo; `sentin8.dev` lists it as "in design" until it has units.
+
+### 1.4 System context
+
+```mermaid
+graph TD
+    subgraph GH["GitHub (public)"]
+        ENGINE["Sentin8/sentin8-site-engine<br/>tag site-engine-vX.Y.Z"]
+        S8["Sentin8/sentin8-site"]
+        B8["Bank8-dev/bank8-site"]
+        H8["Hotel8/hotel8-site"]
+        X8["Exchange8-dev/exchange8-site"]
+        T8["Trade8-dev/trade8-site"]
+        BL8["commerce8/bill8-site"]
+        E8["Email8-dev/email8-site"]
+        CI["Sentin8/sentin8-ci<br/>site.yml @ci-v1"]
+        REPOS["~98 unit repos<br/>(README/DESIGN/BUSINESS/SECURITY)"]
+    end
+    subgraph WEB["GitHub Pages — custom domains"]
+        D1["sentin8.dev"]
+        D2["bank8.dev"]
+        D3["hotel8.dev"]
+        D4["exchange8.dev"]
+        D5["trade8.dev"]
+        D6["bill8.dev"]
+        D7["email8.dev"]
+    end
+    ENGINE -- "git tag pin (npm)" --> S8 & B8 & H8 & X8 & T8 & BL8 & E8
+    REPOS -- "harvest at build time<br/>(raw.githubusercontent.com)" --> S8 & B8 & H8 & X8 & T8 & BL8 & E8
+    CI -- "build + deploy" --> S8 & B8 & H8 & X8 & T8 & BL8 & E8
+    S8 --> D1
+    B8 --> D2
+    H8 --> D3
+    X8 --> D4
+    T8 --> D5
+    BL8 --> D6
+    E8 --> D7
+```
+
+## 2. Framework decision — Docusaurus v3
+
+| Requirement | Docusaurus v3 | Astro + Starlight | Custom Next.js | Hosted SaaS (Mintlify/Fern) |
+|---|---|---|---|---|
+| Marketing landing **and** docs-grade engine in one site | ✅ custom React pages + full docs system | ⚠️ landing lives outside the docs theme | ✅ but nav/search/versioning hand-built | ⚠️ constrained branding |
+| Mermaid (334 files!) | ✅ official `@docusaurus/theme-mermaid` | ⚠️ manual integration | manual | varies |
+| Doc versioning (SDK tags) | ✅ built-in | ❌ none | manual | paid tiers |
+| MDX components (cards, API tables, code tabs) | ✅ React | ✅ islands | ✅ | limited |
+| OpenAPI rendering | ✅ `docusaurus-plugin-openapi-docs` | community | manual | core |
+| Local offline search | ✅ `@easyops-cn/docusaurus-search-local` | ✅ Pagefind | build it | vendor |
+| Multi-site (7 sites) via shared theme package | ✅ established monorepo pattern | ✅ | ✅ | per-site pricing |
+| Self-sovereignty (no vendor lock) | ✅ | ✅ | ✅ | ❌ conflicts with platform posture |
+
+**Decision: Docusaurus v3** — it is "a website on its own" (fully custom
+landing/branding) *plus* a documentation engine underneath: versioning,
+Mermaid, MDX, offline search. Starlight was the runner-up but has no doc
+versioning and splits landing/docs into two styling worlds; a custom
+Next.js app would rebuild what Docusaurus already ships; SaaS hosting
+contradicts the platform's own-your-stack posture.
+
+**Rejected alternatives** are recorded in the table above; the engine
+package (below) keeps the door open to swap the underlying generator
+per-site without touching content, because all content is plain
+Markdown/MDX in repos.
+
+## 3. Repo topology & release ring
+
+Mirrors the SDK's git-tag pin discipline (RUST SDK ring pattern, RS §7.1)
+on the npm side:
+
+| Repo (in-tree folder) | npm/role | Domain |
+|---|---|---|
+| `sentin8/sentin8-site-engine` | `@sentin8/site-engine` — shared theme, components, config factory, harvester, scaffolder; tags `site-engine-vX.Y.Z` | — (no site) |
+| `sentin8/sentin8-site` | Docusaurus site (platform) | `sentin8.dev` |
+| `bank8/bank8-site` | Docusaurus site (finance vertical) | `bank8.dev` |
+| `hotel8/hotel8-site` | Docusaurus site (hospitality vertical) | `hotel8.dev` |
+| `exchange8/exchange8-site` | Docusaurus site (capital markets vertical) | `exchange8.dev` |
+| `trade8/trade8-site` | Docusaurus site (trading vertical) | `trade8.dev` |
+| `bill8/bill8-site` | Docusaurus site (billing vertical) | `bill8.dev` |
+| `email8/email8-site` | Docusaurus site (email vertical) | `email8.dev` |
+
+Rules:
+
+- **Dependency direction is one-way**: engine → (nothing Sentin8);
+  sites → engine (npm git-tag pin). Sites never import each other's
+  code; cross-site content links are absolute URLs only.
+- **Engine release ring**: an engine change → tag `site-engine-vX.Y.Z`
+  → each site bumps its pin (the same cascade discipline as the SDK
+  ring; automation can follow later — manual first, like CICD-1).
+- **Local dev** (`npm install` before the remotes exist): install the
+  engine from the sibling folder with `--no-save`; shipped
+  `package.json`s keep the git pin as target state.
+- Every site repo carries the standard doc trio (`README.md`,
+  `DESIGN.md`, `BUSINESS.md`) per `documents.md`.
+
+## 4. Content architecture — repos stay the source of truth
+
+### 4.1 Two content kinds
+
+1. **Hand-authored pages** (site voice, curated, in the site repo):
+   landing, product overviews, detailed use cases, security highlights,
+   API surface tables, RFW explanation, samples, quickstart.
+2. **Harvested pages** (rendered from the unit repos at build time, into
+   a gitignored `docs/reference/`): per unit — `README.md` → "Overview",
+   `DESIGN.md` → "Architecture deep dive", `BUSINESS.md` → "Business
+   rules", `SECURITY.md` (canonical) where the unit has one,
+   `CHANGELOG.md` where present. Each harvested page carries a
+   provenance banner ("Rendered from `{org}/{repo}` at build time").
+   Harvested files are emitted with MDX disabled (frontmatter
+   `format: md`) so raw HTML/angle brackets in maintainer docs can never
+   break the build; Mermaid blocks still render via the theme.
+
+### 4.2 Harvester contract
+
+- Input: `site.json` (per-site unit inventory, below).
+- Resolution order per unit file: local sibling folder
+  (`../../{unit}/`) first, then
+  `raw.githubusercontent.com/{org}/{repo}/main/...` — so local dev never
+  needs the network, CI harvests the public truth.
+- Output: `docs/reference/{unit}/` files with title frontmatter,
+  provenance note, and a `_category_` so Docusaurus autogenerates the
+  reference sidebar.
+- Failure policy: a missing local copy falls back to remote; a missing
+  remote **fails the build** (docs never silently trail).
+
+### 4.3 `site.json` — per-site unit inventory (data model)
+
+```json
+{
+  "vertical": "bank8",
+  "domain": "bank8.dev",
+  "org": "Bank8-dev",
+  "tagline": "Banking, payments, and open banking on Sentin8",
+  "accent": "#1B6CA8",
+  "logo": "/img/bank8-logo.svg",
+  "units": [
+    {
+      "slug": "ledger",
+      "kind": "service",
+      "name": "Bank8:Ledger",
+      "repo": "bank8-ledger",
+      "org": "Bank8-dev",
+      "summary": "Core ledger — accounts, products, double-entry postings, balances",
+      "scopes": ["bank8:ledger:accounts:read", "bank8:ledger:postings:write"]
+    }
+  ],
+  "apps": [ ... ],
+  "sdks": [ ... ],
+  "crossrefs": [
+    { "label": "Payments used by hotel8 & bill8", "url": "https://bank8.dev/products/payments" }
+  ]
+}
+```
+
+Kinds: `service` | `app` | `sdk` | `starter` | `platform-app`. The
+engine's landing + sidebar factories consume this file; a new unit is a
+data edit + optional hand-authored pages.
+
+### 4.4 Page blueprint — sentin8.dev
+
+| Route | Content |
+|---|---|
+| `/` | Hero (post-quantum, zero-static-secrets pitch) · five security pillars strip · all 17 services grouped by plane (Identity & Access / Data & Events / Execution / Channels) · starters · apps · SDKs (Rust + Flutter) · vertical showcase (6 live cards + health8 "in design") · quickstart snippet |
+| `/docs/` | Platform overview (from the group README narrative) |
+| `/docs/security/` | Five pillars detailed + link matrix to every `{vertical}.dev` security page |
+| `/docs/services/{svc}/` | Per service (17×): overview · use cases · API surface table (endpoint, method, scope) · harvested deep-dive links |
+| `/docs/sdks/` | Rust facade + crate map · mini-facades · Flutter package; versioned docs pinned to `sdk-vX.Y.Z` tags (Docusaurus versions — content grows here) |
+| `/docs/remote-ui/` | The RFW pattern: `GET /v1/admin/ui/{page}`, POST alias routes, Material Icons code points, Dash as pure rendering host |
+| `/docs/developers/` | Single-repo dev story quickstart, CLI, Captain, vertical enrollment, e2e, CI |
+| `/docs/samples/` | Multi-language code tabs (cURL through BFF, Rust SDK, Dart/Flutter) |
+| `/docs/verticals/` | One page per vertical: what it is, unit inventory, link to `{vertical}.dev` |
+| `/docs/reference/{unit}/` | Harvested README/DESIGN/BUSINESS per unit |
+
+### 4.5 Page blueprint — `{vertical}.dev` (bank8.dev exemplar)
+
+| Route | Content |
+|---|---|
+| `/` | Hero · unit card grid (all services, apps, SDKs) · security banner ("inherits Sentin8's post-quantum model" → sentin8.dev) · cross-vertical consumers ("who uses this vertical") |
+| `/docs/` | Vertical overview (from the group README narrative) |
+| `/docs/products/{unit}/` | Per product: overview · **use cases in detail** · API surface table · harvested deep-dive links |
+| `/docs/apps/{app}/` | Per app: purpose, screens, security posture |
+| `/docs/sdk/` | Vertical facade + contracts + scope vocabulary |
+| `/docs/security/` | Vertical-specific posture + the inherited pillars (link) |
+| `/docs/remote-ui/` | Link to sentin8.dev pattern + this vertical's admin pages |
+| `/docs/samples/` | Code tabs against the vertical's APIs |
+| `/docs/reference/{unit}/` | Harvested trio per unit |
+
+Verticals with 4–15 products combine overview+use-cases+API into one rich
+product page (bank8, the flagship, gets separate pages); all get the
+harvested deep-dives regardless.
+
+### 4.6 Cross-vertical references
+
+`CrossSiteLink` (engine component) renders absolute links with the
+target site's accent color chip, e.g. hotel8's payments page →
+`https://bank8.dev/products/payments`; sentin8.dev's vertical showcase →
+each `{vertical}.dev`. Cross-site links are **content, not config**: they
+live in `site.json:crossrefs` and hand-authored pages, never in engine
+or platform code.
+
+## 5. Site engine (`@sentin8/site-engine`)
+
+| Piece | Role |
+|---|---|
+| `makeSiteConfig()` | One factory producing the whole Docusaurus config: theme-mermaid + search-local, MDX, navbar (site name, Products, Security, Developers, Reference, cross-vertical dropdown), footer (all `{vertical}.dev` links), custom fields from `site.json` |
+| `makeSidebars()` | Autogenerated reference sidebar + product sidebar from `site.json` |
+| `theme.css` | Design system: Inter, 4px grid, glass panels, Royal Gold `#D4AF37` platform accent, per-site `--site-accent` CSS var, dark-first, WCAG AA |
+| Components (MDX-usable, JSX-free internals) | `Landing`, `Hero`, `SecurityPillars`, `ServiceGrid/ServiceCard`, `ProductGrid/ProductCard`, `AppGrid/AppCard`, `SdkGrid/SdkCard`, `UseCaseGrid/UseCaseCard`, `ApiTable/ApiRow`, `MethodBadge`, `ScopeBadge`, `CrossSiteLink`, `ProvenanceNote`, `QuickStart` |
+| `scripts/harvest.mjs` | The §4.2 harvester |
+| `scripts/new-site.mjs` | Scaffolder: new `{vertical}-site` from `site.json` (config, sidebars, landing, workflow caller) — the `sync-ci.py` analogue |
+
+Components are authored **without JSX** (plain `createElement` via an
+internal `h()` helper) so they compile inside `node_modules` — Docusaurus
+excludes `node_modules` from Babel. Site-local pages may use JSX freely.
+
+## 6. Deployment & CI
+
+- `sentin8-ci` gains a `site.yml` reusable workflow (`on: workflow_call`):
+  checkout → node 24 → `npm ci` → `npm run harvest` → `npm run build` →
+  upload artifact → deploy to GitHub Pages. Nightly refresh rides the
+  aggregation nightly's existing cadence (harvest pulls current `main`
+  of every referenced repo; a second `schedule` in the site's own caller
+  rebuilds weekly to catch sibling-repo doc changes).
+- Domains: `CNAME` file in each site's `static/`; DNS `A`/`CNAME` records
+  are the one operator step (WEB-9) — GitHub Pages custom-domain
+  enforcement over HTTPS (PQ posture of the *sites themselves* is the
+  CDN's; the platform's PQ-TLS applies to the product, not marketing
+  static hosting — noted explicitly to avoid overclaiming).
+- Sites are **static, zero client-side tracking**, no external fonts
+  (Inter is bundled) — consistent with the zero-secrets posture.
+
+## 7. Security & compliance posture of the sites
+
+- Static output only; no forms, no cookies, no PII.
+- `CSP`/`X-Frame-Options`/`Referrer-Policy` headers via
+  `_headers`-style static config where Pages supports it.
+- Security content claims exactly what `SECURITY.md` claims — the
+  harvested canonical copy is the same file every repo ships.
+
+## 8. Backlog stories (WEB program)
+
+| ID | Story | Est |
+|---|---|---|
+| WEB-1 | Engine repo `sentin8-site-engine`: theme, components, config/sidebar factories, harvester, scaffolder; tagged `site-engine-v0.1.0` | L |
+| WEB-2 | `sentin8-site`: sentin8.dev full content (17 services, SDKs, security, developers, samples, vertical showcase) + site.yml caller | L |
+| WEB-3 | `bank8-site`: bank8.dev exemplar (6 products × overview/use-cases/API pages, 4 apps, SDK, samples) | M |
+| WEB-4 | `hotel8-site` (6 services, 6 apps) | M |
+| WEB-5 | `exchange8-site` (14 services, app) | M |
+| WEB-6 | `trade8-site` (6 services, app) | S |
+| WEB-7 | `bill8-site` (8 services, 4 apps) | M |
+| WEB-8 | `email8-site` (4 services, webmail app) | S |
+| WEB-9 | `site.yml` in sentin8-ci + all site callers | M |
+| WEB-10 | Domains: register/point `{vertical}.dev` + `sentin8.dev` at GitHub Pages; enable Pages enforcement HTTPS | S |
+
+## 9. Open questions
+
+- **OQ-1 Analytics**: none by default; a self-hosted, cookie-free
+  counter (e.g. a Sentin8:Post-fed endpoint) could later measure page
+  interest — deferred.
+- **OQ-2 Live playground**: public demo instance links need a hosted
+  fleet; deferred until the deployment story exists.
+- **OQ-3 i18n**: Docusaurus-native; start English-only (AGENTS language
+  rule), revisit per market.
+- **OQ-4 API versioning**: when OpenAPI files exist per service
+  (`openapi.yaml` today only in bank8-ebank/efintech), add
+  `docusaurus-plugin-openapi-docs` pages; the API tables on product
+  pages are the interim.
