@@ -238,6 +238,16 @@ product page; ALL get the embedded DESIGN/BUSINESS/SECURITY sub-pages
 regardless (the dossier is mandatory — owner decision 2026-10-15: the full
 business and design detail must be part of every product page).
 
+**CSS loading rule (owner defect 2026-10-16).** The engine theme CSS is
+loaded by the config factory via the preset's `theme.customCss` (webpack
+entry `node_modules/@sentin8/site-engine/src/theme.css`) — a plain
+`@import "@sentin8/site-engine/theme"` inside custom.css NEVER resolves
+(css-loader ignores package subpaths in @import), and the result is a
+fully unstyled landing. The starter templates must not reintroduce it.
+
+**Typography rule (owner decision 2026-10-16).** Docs prose uses plain
+hyphens; no em-dash characters anywhere in site content.
+
 ### 4.6 Cross-vertical references
 
 `CrossSiteLink` (engine component) renders absolute links with the
