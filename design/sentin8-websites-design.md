@@ -225,19 +225,18 @@ data edit + optional hand-authored pages.
 
 | Route | Content |
 |---|---|
-| `/` | Hero · unit card grid (all services, apps, SDKs) · security banner ("inherits Sentin8's post-quantum model" → sentin8.dev) · cross-vertical consumers ("who uses this vertical") |
+| `/` | Hero · **Where-to-start strip** (explicit titled links: Product tour / Security / Get started, each with a one-line explanation) · unit card grid (every service, app, SDK — card title, kind badge, description, "Explore →") · security banner ("inherits Sentin8's post-quantum model" → sentin8.dev) · cross-vertical consumers · footer with clear section links |
 | `/docs/` | Vertical overview (from the group README narrative) |
-| `/docs/products/{unit}/` | Per product: overview · **use cases in detail** · API surface table · harvested deep-dive links |
-| `/docs/apps/{app}/` | Per app: purpose, screens, security posture |
+| `/docs/products/{unit}/` | Per product — a **multi-page dossier**: Overview & use cases in detail (hand-authored) · **Architecture (DDD)** — the full harvested DESIGN.md · **Business rules (BRD)** — the full harvested BUSINESS.md · **Security** — the canonical harvested SECURITY.md. The reference detail lives INSIDE the product, not in a separate reference tree. |
+| `/docs/apps/{app}/` | Per app: purpose, screens, security posture (full detail, same dossier pattern) |
 | `/docs/sdk/` | Vertical facade + contracts + scope vocabulary |
 | `/docs/security/` | Vertical-specific posture + the inherited pillars (link) |
-| `/docs/remote-ui/` | Link to sentin8.dev pattern + this vertical's admin pages |
 | `/docs/samples/` | Code tabs against the vertical's APIs |
-| `/docs/reference/{unit}/` | Harvested trio per unit |
 
 Verticals with 4–15 products combine overview+use-cases+API into one rich
-product page (bank8, the flagship, gets separate pages); all get the
-harvested deep-dives regardless.
+product page; ALL get the embedded DESIGN/BUSINESS/SECURITY sub-pages
+regardless (the dossier is mandatory — owner decision 2026-10-15: the full
+business and design detail must be part of every product page).
 
 ### 4.6 Cross-vertical references
 
