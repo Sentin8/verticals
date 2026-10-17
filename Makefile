@@ -18,7 +18,8 @@ SHELL := /bin/bash
 
 VERTICALS := bank8 hotel8 trade8 bill8 email8 exchange8
 
-.PHONY: help build build-platform build-verticals infra-up infra-down status
+.PHONY: help build build-platform build-verticals infra-up infra-down status \
+	start stop
 
 help: ## Show this help
 	@echo "sentin8.new aggregation (grouped layout, RS 4.4)"
@@ -41,6 +42,25 @@ infra-up: ## Start dev PG 18 + Valkey (owned by sentin8/, §2.2.1)
 
 infra-down: ## Stop the dev infra
 	@$(MAKE) -C sentin8 infra-down
+
+# STARTSCOPE-1 (RS §4.5.2, the three-level rule): the ROOT start is
+# the whole-tree orchestration — the platform group boots first (the
+# core fleet + captain), then every vertical group joins via its own
+# group-scoped start (idempotent `captain start <types>` when the
+# captain is already up). Each group's Makefile carries its own scope
+# pin; this target never talks to the captain CLI directly.
+start: ## Start the whole tree: platform group, then every vertical group
+	@$(MAKE) -C sentin8 start
+	@for v in $(VERTICALS); do \
+		echo "── $$v/ (group start)"; \
+		$(MAKE) -C $$v start || { echo "ERROR: $$v group start failed" >&2; exit 1; }; \
+	done
+
+# Root stop = the platform group's stop (the captain's graceful
+# shutdown takes every managed instance down with it — one command,
+# one fleet; per-group leaves are for selective teardown).
+stop: ## Stop the whole tree (platform stop: captain + all instances)
+	@$(MAKE) -C sentin8 stop
 
 status: ## Per-group repo HEADs
 	@for g in sentin8 $(VERTICALS); do \

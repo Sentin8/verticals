@@ -168,6 +168,18 @@ platform's PG instance and Valkey). The root keeps only an orchestration
 Makefile and docs; vertical group folders do NOT carry their own compose
 files.
 
+**PG connection ceiling (PGCEIL-1)**: the ceiling is sized for the
+WHOLE-TREE boot, not a single group. The full fleet is 60 instances
+(18 platform + 42 vertical service types); each instance transiently
+holds ~6 PostgreSQL connections at boot (3-connection app pool + the
+3-connection `sentin8-tls` sync pool, all handshaking at once during
+tier spawning). The observed fresh-boot peak was 195/200 (2026-10-17),
+saturating the pool and crash-looping the late spawners — the ceiling is
+`max_connections=600` with `superuser_reserved_connections=5` kept for
+operator diagnostics. Steady-state stays far below; the headroom exists
+for the boot burst and reconnect storms (services re-handshake on cert
+renewal, §3.2.4 of the platform group DESIGN).
+
 ### 2.3 The `sentin8-sdk` mega-workspace (the single-repo enabler)
 
 `sentin8-sdk` is **one cargo workspace** containing every shared crate +
@@ -531,6 +543,49 @@ Shapes by repo kind (all provide `help` and `clean`):
 
 `make start` = infra guaranteed → trimmed captain boot when captain is
 down → idempotent `captain start <service_type>` when it is up.
+
+#### 4.5.2 The three-level start-scope rule (STARTSCOPE-1)
+
+`SENTIN8_SERVICES` (the captain's boot-spawn filter, §3) is the ONE
+scoping mechanism — every `make start` surface pins it to its scope:
+
+| Level | Invocation | Boot scope (captain down) | Live scope (captain up) |
+|---|---|---|---|
+| Service repo | `sentin8-auth && make start` | `SENTIN8_SERVICES=sentin8:acme,sentin8:auth` (this service + acme, §4.5.1-4) | `captain start sentin8:auth` (idempotent) |
+| Group repo | `sentin8/ && make start` — platform core only | `SENTIN8_SERVICES` = the platform core list (the 18 `sentin8:*` service types: acme, ai, app, auth, bff, bus, captain, cron, db, flow, func, post, proxy, secrets, stat, storage, sys, web — `captain` boots-skips its own entry) | `captain start <platform list>` |
+| Group repo | `bank8/ && make start` — that vertical only | `SENTIN8_SERVICES` = platform base (acme, auth, proxy, bus, sys, bff, web) + this group's `$(SERVICES)` service types | same list via API |
+| Tree root | `sentin8.new/ && make start` — everything | delegates: platform group `make start`, then each vertical group `make start` (idempotent API form when the captain came up) | same delegation |
+
+Rules:
+- **A group's `make start` never boots another group's services.** The
+  vertical group's boot pin = the platform BASE (`sentin8:acme,
+  sentin8:auth,sentin8:proxy,sentin8:bus,sentin8:sys,sentin8:bff,
+  sentin8:web` — the minimal TLS/identity/ingress/data plane a
+  vertical's services call) plus its own service types (the same
+  `$(SERVICES)` variable the group Makefile already uses for builds).
+  The platform group pins its own full core list — not the verticals.
+- **The catalog stays the full union** (§3): `SENTIN8_SERVICES` filters
+  only the boot SPAWN; the registry, `/start-services`, per-instance
+  actions, and placement still name any enrolled type. A vertical
+  started later (`captain start bank8:ledger` or the group Makefile
+  with the captain up) joins the running fleet without a reboot.
+- **Boot pin vs live pin.** When captain is DOWN the Makefile exports
+  the scope pin and runs `captain start` (the boot filter applies).
+  When captain is UP it calls `captain start <types...>` (the API form)
+  — the env pin is NOT set on that path so an operator-exported
+  `SENTIN8_SERVICES` never leaks into a live fleet's semantics.
+- **`make stop` mirrors `start`**: a group's `stop` stops only that
+  group's running instance rows (`captain stop-instance` per key) and
+  keeps the captain + platform up; the platform group's `stop` stops
+  captain itself (the fleet goes down with it); the root `stop` = one
+  platform `stop`. Per-service `stop` remains §4.5's instance stop.
+- **dev-destroy.sh (BOOTSTRAP-1) is platform-scoped by contract**: it
+  drops/recreates only the `sentin8` platform database (vertical
+  databases are untouched — they are owned by `vertical init`), enrolls
+  only the platform fragments, and starts the captain with the
+  platform-core pin (§this table, row 2) — a reset never boots a
+  vertical fleet by accident. Re-enrolling/starting a vertical after a
+  reset is the vertical group's `make enroll && make start`.
 
 ---
 
