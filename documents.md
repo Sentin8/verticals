@@ -202,7 +202,7 @@ Rules for `BUSINESS.md`:
 Standard header:
 
 ```markdown
-# BUSINESS.md: [Service Name] — Business Requirements & Functionality
+# [Service Name] — Business Requirements & Functionality
 
 > Audience: product owners, business analysts, and anyone evaluating what
 > [Service] **does for the business**. For architecture read `README.md`;

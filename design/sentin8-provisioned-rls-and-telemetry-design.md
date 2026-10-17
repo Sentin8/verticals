@@ -1,4 +1,4 @@
-# DESIGN.md: Provisioned-row RLS tiers + declarative telemetry properties — Detailed Design
+# Provisioned-row RLS tiers + declarative telemetry properties — Detailed Design
 
 > Two same-day fixes born from one warning census (2026-10-16): (A) the
 > email8-store provisioning consumer is structurally unprovisionable and
