@@ -333,3 +333,13 @@ excludes `node_modules` from Babel. Site-local pages may use JSX freely.
   (client chunk throws `exports is not defined`; request sections stick
   on skeleton fallbacks). The static rendering needs no client JS, rides
   search + sidebar natively, and stays in the sites' typographic voice.
+  **Completeness note (OQ-4b, 2026-10-17)**: the dumps lagged the routers
+  badly (~900 missing route-method pairs tree-wide; trade8 + exchange8
+  carried no spec at all) — caught up and now ENFORCED by the OAPEC
+  program (`design/sentin8-openapi-coverage-design.md`): every served
+  route annotated + a per-service router↔spec drift-guard test, so the
+  sites' API pages can no longer trail the routers.
+  **Re-harvest (2026-10-18)**: after the tree-wide OAPEC catch-up — all 56
+  spec-owning services at zero gap, trade8 + exchange8 first API pages
+  generated — all 7 sites re-harvested (`npm run harvest`) and rebuilt
+  (`npm run build` green on all 7).
