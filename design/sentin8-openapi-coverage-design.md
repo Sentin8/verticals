@@ -136,6 +136,56 @@ flowchart TD
    (greenfield: re-run `vertical enroll`/registration when schema-visible
    sections change; the dump is a build artifact of the annotation
    source of truth).
+10. **Typed response/request schemas - a free-form body is a defect,
+   not a shortcut (added 2026-10-19, owner finding: "many of APIs
+   return value just show OK").** `body = serde_json::Value` (and the
+   `request_body` twin) serializes as an EMPTY schema `{}`; the sites
+   renderer then shows only the description ("OK") with no schema at
+   all - 1,189 of 2,348 tree-wide operations were affected (hotel8
+   345, bank8 285, exchange8 189, sentin8 193, trade8 117, email8 54,
+   bill8 6). Handlers that return well-shaped JSON (e.g. pms
+   availability: property_id/arrival_date/departure_date/room_types)
+   declare a real DTO instead: `response_body = SearchAvailability`
+   (or `body = <DTO>`), `#[derive(ToSchema)]` on the struct, field
+   types matching what serde actually serializes (uuid/chrono types
+   behind the features list of §4). Where a response is genuinely
+   free-form by contract (an opaque passthrough), the annotation names
+   it: `body = Object` with `additional_properties` schema is STILL
+   typed by utoipa - the EMPTY `{}` never ships. Enforcement: the
+   site-engine harvest REJECTS a spec whose 2xx-JSON response carries
+   an empty schema (see the websites design OQ-4 note); the check is
+   content-based and runs on every harvest, so this cannot regress
+   silently.
+
+11. **Recursive types get hand-written, recursion-safe schemas
+    (established 2026-10-19 - the OAPEC-9 sites lesson).** A recursive
+    tree type (the SDK's RFW `RemoteWidget`: containers hold child
+    trees) must NOT carry a bare self-`$ref` component body - utoipa's
+    derive would inline the variant tree infinitely at generation time,
+    and the naive hand-written fallback (`components.schemas.RemoteWidget
+    = {"$ref": ".../RemoteWidget"}`) trips redocly's bundler
+    ("Self-referencing circular pointer"), which makes
+    docusaurus-plugin-openapi-docs SILENTLY skip the whole unit at
+    harvest. The canonical shape (shipped in sdk-v0.6.7,
+    `sentin8::rfw::widget`):
+    - the component body is a genuine `oneOf` union of the variant
+      objects, each carrying the serde internal tag (`"type": "<variant>"`
+      single-constant enum) plus the variant struct's properties
+      flattened in - exactly the derive's internally-tagged-enum shape;
+    - the variant structs' recursive child edges are annotated
+      `#[schema(no_recursion)]` so their derives do not forward the
+      reference collection back into the manual `ToSchema::schemas`
+      (mutual recursion otherwise overflows the stack during
+      `--print-registration`);
+    - the manual `ToSchema::schemas()` registers every variant AND
+      forwards each variant's own reference collection, so nested field
+      types (`ContainerDirection`, `WidgetDataTableColumn`,
+      `FormFieldType`, ...) ship as components - inline `$ref`s inside
+      the union items must resolve, or redocly rejects the unit with
+      `Missing $ref pointer`;
+    - redocly tolerates GENUINE cycles carried by pointers
+      (`RemoteWidget -> children -> RemoteWidget`); it rejects only a
+      component whose body IS a direct self-`$ref`.
 
 ## 3. The drift guard (enforcement test)
 
