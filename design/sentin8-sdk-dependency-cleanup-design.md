@@ -1,13 +1,13 @@
-# sentin8 — SDK Dependency-Direction Cleanup & SDK-Crate Dissolution (SDD)
+# sentin8 - SDK Dependency-Direction Cleanup & SDK-Crate Dissolution (SDD)
 
 > **Status**: Target state. This document defines two coupled changes decided
 > with the platform owner (2026-10-04):
 >
-> 1. **Dependency-direction cleanup** — the shared plane (`shield`, `shell`)
+> 1. **Dependency-direction cleanup** - the shared plane (`shield`, `shell`)
 >    no longer links any service-scoped client; boot-time cross-service
 >    self-registration is removed; all fire-and-forget telemetry moves to
 >    MemBus.
-> 2. **SDK-crate dissolution** — every `{svc}-client`/`{svc}-contracts` crate
+> 2. **SDK-crate dissolution** - every `{svc}-client`/`{svc}-contracts` crate
 >    that is not linked by the shared plane moves out of `sentin8-sdk` into
 >    its owning service repo, each carried by a per-service mini-facade crate.
 >
@@ -33,12 +33,12 @@
 The repository split (RS) left three dependency-direction defects in the SDK
 plane:
 
-1. **`shield` links `sentin8-stat-client`** (`shield/src/stat_emit.rs`) —
+1. **`shield` links `sentin8-stat-client`** (`shield/src/stat_emit.rs`) -
    the shared authorization engine depends on a service-scoped HTTP client,
    including a per-process `{leaf}-policy` M2M DCR workload. Every service
    transitively compiles and DCR-registers an extra workload because every
    service boots on `shell` → `shield`.
-2. **Boot-time cross-service self-registration** — `sentin8-auth` and
+2. **Boot-time cross-service self-registration** - `sentin8-auth` and
    `sentin8-acme` call `CronClient::create_schedule` at boot (JWKS rotation,
    leaf-cert renewal sweep), `sentin8-secrets`, `sentin8-ai`,
    `bank8-payments`, `bank8-reporting`, `exchange8-gateway`,
@@ -47,9 +47,9 @@ plane:
      must not depend on cron. acme is the same class (foundational tier-1
      service).
    - *Boot-order fragility*: acme is tier 1 and auth tier 2 but cron is
-     tier 4 — the registrations fire before cron exists and only land on
+     tier 4 - the registrations fire before cron exists and only land on
      the next boot.
-3. **Facade legacy code** — the facade ships hand-rolled pre-namespace
+3. **Facade legacy code** - the facade ships hand-rolled pre-namespace
    clients (`facade/src/auth.rs` `AuthClient` ~550 LOC, `facade/src/db.rs`
    `Db8Client` ~353 LOC) with **zero consumers across all 90 repos**
    (verified 2026-10-04), plus 44 `sdk8`/`Db8` legacy naming references in
@@ -57,7 +57,7 @@ plane:
 
 And the SDK keeps service-scoped crates it does not need to own:
 
-4. **`sdk-crates/` are 15 crates with zero shared-plane linkage** — they are
+4. **`sdk-crates/` are 15 crates with zero shared-plane linkage** - they are
    pure peer-level HTTP clients/contract sets. Hosting them in `sentin8-sdk`
    means every consumer repo compiles all of them (the facade re-exports
    them all), and contract changes spin the global SDK version ring for
@@ -66,7 +66,7 @@ And the SDK keeps service-scoped crates it does not need to own:
 ### 1.2 Goals
 
 1. `shield` (and every shared-plane crate) links **zero** service-scoped
-   clients — after the change the SDK plane is `membus`-only for telemetry.
+   clients - after the change the SDK plane is `membus`-only for telemetry.
 2. No service performs boot-time cron self-registration; recurring internal
    work is declared in registration (enroll provisions it) or runs on an
    internal timer.
@@ -83,7 +83,7 @@ And the SDK keeps service-scoped crates it does not need to own:
    → services (RS-3) with the mini-facade repos built before their
    consumers.
 
-### 1.3 System context — before → after
+### 1.3 System context - before → after
 
 ```mermaid
 graph TD
@@ -111,13 +111,13 @@ graph TD
 
 | # | Decision |
 |---|---|
-| D1 | shield must not depend on stat — policy/telemetry events go through MemBus |
-| D2 | auth must not use cron — JWKS rotation runs on an internal timer (root-service rule); acme likewise (same class) |
+| D1 | shield must not depend on stat - policy/telemetry events go through MemBus |
+| D2 | auth must not use cron - JWKS rotation runs on an internal timer (root-service rule); acme likewise (same class) |
 | D3 | all other boot-time cron self-registrations convert to a uniform declarative `schedules` registration section (enroll provisions `cron.schedules`) |
-| D4 | flow/storage/func/cron clients are legitimate SDK surfaces — services import them from the service SDKs (mini-facades) |
+| D4 | flow/storage/func/cron clients are legitimate SDK surfaces - services import them from the service SDKs (mini-facades) |
 | D5 | all fire-and-forget stat emission converts to MemBus; stat-client remains read/query surface (plus the BFF web/mobile ingest) |
-| D6 | no legacy naming — facade legacy clients delete; hand-rolled duplicates replaced |
-| D7 | dead zero-consumer crates stay (kept-everything decision) — they move with their owners |
+| D6 | no legacy naming - facade legacy clients delete; hand-rolled duplicates replaced |
+| D7 | dead zero-consumer crates stay (kept-everything decision) - they move with their owners |
 | D8 | `secrets` crate moves to `sentin8-secrets` (service client, not identity infrastructure) |
 | D9 | consumers import moved crates through per-service mini-facade crates (e.g. `sentin8-flow-sdk`) |
 
@@ -143,7 +143,7 @@ graph TD
 
 **The stay/move boundary is shared-plane linkage, not naming** (SDD-1):
 a crate moves iff no shared-plane crate links it. `auth-client` and
-`bus-client`/`bus-contracts`/`outbox` are service-named but force-stayed —
+`bus-client`/`bus-contracts`/`outbox` are service-named but force-stayed -
 `shell` links them (boot token verification, outbox relay), and moving them
 would invert the repo DAG (SDK repo would depend on the auth/bus service
 repos while they depend on the SDK repo).
@@ -153,7 +153,7 @@ repos while they depend on the SDK repo).
 `sentin8` facade re-exports the shared plane only. The service modules
 (`sentin8::flow`, `::cron`, `::stat`, `::storage`, `::func`, `::db`, `::ai`,
 `::sys`, `::app`, `::bff`, `::secrets`) delete together with the legacy
-hand-rolled clients (`facade/src/auth.rs`, `facade/src/db.rs` — zero
+hand-rolled clients (`facade/src/auth.rs`, `facade/src/db.rs` - zero
 consumers verified) and the `secrets_client` re-export. The `auth` module
 keeps `client`/`jwt`/`m2m`/`fapi` (identity plane), the `tls` and `bus`
 modules keep their current shape.
@@ -162,7 +162,7 @@ modules keep their current shape.
 
 `shield/src/stat_emit.rs` keeps its public API (`init_stat_emitter_for_service`,
 `init_stat_emitter`, `emit_decision`, `emit_metric_event`) but the transport
-becomes a MemBus Pub/Sub publish — no HTTP client, no M2M DCR, no auth
+becomes a MemBus Pub/Sub publish - no HTTP client, no M2M DCR, no auth
 dependency:
 
 ```text
@@ -174,11 +174,11 @@ payload: JSON { envelope fields: service, action, reason, policy_set,
 ```
 
 - The `{leaf}-policy` M2M workload and `sentin8:stat:measure` DCR scope
-  disappear — MemBus needs no auth (embedded Valkey client, tenant isolation
+  disappear - MemBus needs no auth (embedded Valkey client, tenant isolation
   by key derivation, membus DESIGN §"no HTTP auth").
 - Failure posture unchanged: publish failure degrades to log-only, never
   fatal (matching the current "stat outage never blocks decisions" contract).
-- stat's `redis_sub.rs` worker gains the `stat:telemetry` subscription — it
+- stat's `redis_sub.rs` worker gains the `stat:telemetry` subscription - it
   already owns the rollup aggregation buffers for `stat:metrics:tls` and
   `stat:metrics:log`; telemetry frames feed the same minute/hour/day
   pipeline.
@@ -207,7 +207,7 @@ pub struct ScheduleDecl {
     pub schedule_type: &'static str,   // cron.schedules.schedule_type
     pub cron_expression: &'static str, // 5-field
     pub timezone: &'static str,        // default "UTC"
-    pub target_config: serde_json::Value, // {baseUrl, internalPath} — same shape cron takes today
+    pub target_config: serde_json::Value, // {baseUrl, internalPath} - same shape cron takes today
     pub max_retries: u32,
 }
 ```
@@ -216,7 +216,7 @@ pub struct ScheduleDecl {
   `--print-registration --section=schedules` (same mechanism as
   `event_triggers`, `admin_scopes`, `m2m_grants`) and upserts
   `cron.schedules` rows for each service. `schedule_type` is unique per
-  (env, domain) — re-enroll idempotent (ON CONFLICT update).
+  (env, domain) - re-enroll idempotent (ON CONFLICT update).
 - **Who runs it**: cron's ticker fires the schedule; the target is the
   service's own HTTP endpoint (`target_config.baseUrl` derived from the
   platform domain at enroll time, `internalPath` as declared). This is
@@ -226,9 +226,9 @@ pub struct ScheduleDecl {
   calendar), `exchange8-gateway`, `exchange8-refdata` add the section and
   delete their runtime `CronClient` registration code. **Tenant/business
   runtime schedule creation stays** on the cron-client (e.g. bank8-ledger's
-  tenant posting schedules, bank8-payments' calendars) — D4: that client is
+  tenant posting schedules, bank8-payments' calendars) - D4: that client is
   imported from the owner repo's mini-facade.
-- **No transitional defaults** — the runtime registration paths delete in
+- **No transitional defaults** - the runtime registration paths delete in
   the same change.
 
 ### 2.5 Auth & acme internal timers (D2)
@@ -239,10 +239,10 @@ pub struct ScheduleDecl {
   newest key is older than 30 days. No cross-service calls.
 - `sentin8-acme`: delete the acme-cron M2M DCR + `CronClient` block
   (`server.rs`). The renewal sweep already runs as an internal loop
-  (server.rs sweep); the cron registration becomes redundant — the internal
+  (server.rs sweep); the cron registration becomes redundant - the internal
   sweep interval drives renewal. No cross-service calls.
 - Rationale: auth is a root service (every service depends on it), acme is
-  foundational tier-1 — neither may call cron; and cron is tier 4 so the
+  foundational tier-1 - neither may call cron; and cron is tier 4 so the
   registrations could only ever land on the next boot (defect class fixed
   structurally).
 
@@ -258,7 +258,7 @@ pub struct ScheduleDecl {
 
 The `build_stat_client`/DCR plumbing and the `sentin8:stat:measure` scopes
 delete from each emitter. A small shared helper crate **stays in the SDK**
-(`shield`'s `stat_emit` module generalizes to a `telemetry` plane — same
+(`shield`'s `stat_emit` module generalizes to a `telemetry` plane - same
 membus publish path, reusable by services that emit metric frames directly
 without embedding shield). shield keeps `emit_decision` (policy events) and
 `emit_metric_event` (shared metric emission path, e.g. FUNC-5 func,
@@ -269,20 +269,20 @@ the shared telemetry helper in the SDK plane.
 ### 2.6a `secrets` crate → `sentin8-secrets` (D8)
 
 `identity/secrets` is the HTTP client for Sentin8:Secrets' resolve endpoint
-— a service-scoped client. Consumers (post, ai, fdx, email8-*) pin the
+- a service-scoped client. Consumers (post, ai, fdx, email8-*) pin the
 `sentin8-secrets` repo's mini-facade instead of getting it from the platform
 facade. The identity layer keeps only `jwt`, `fapi`, `m2m`, `auth-client`.
 
 ### 2.7 The 8-step pipeline unchanged
 
 The standard authorization pipeline (AGENTS.md §5) is untouched: token
-verification, tenant resolution, Shield decisions — only the *emission*
+verification, tenant resolution, Shield decisions - only the *emission*
 transport of decision events changes (HTTP → membus). No handler changes
 beyond the schedule/telemetry call sites above.
 
 ---
 
-## 3. SDK-crate dissolution — mechanics (D4, D9)
+## 3. SDK-crate dissolution - mechanics (D4, D9)
 
 ### 3.1 The mini-facade pattern
 
@@ -301,7 +301,7 @@ sentin8-flow/                      # the service repo
 
 Consumer import shape is preserved (namespace rule, architecture-principles
 §2.1): `use sentin8_flow_sdk::client::FlowClient` replaces
-`use sentin8::flow::client::FlowClient` — same two-level shape, different
+`use sentin8::flow::client::FlowClient` - same two-level shape, different
 first segment. The mini-facade pins the shared SDK (`sentin8` facade git
 tag) for its shared deps (tls, config, bus-contracts …) so consumers do not
 inherit a second shared-plane pin.
@@ -374,29 +374,29 @@ graph TD
   (`sentin8-flow-client`); only the import first-segment changes.
 - **SDD-4a**: a mini-facade is named `{svc}-sdk`; its package is
   `sentin8-{svc}-sdk` and its repo directory is `sdk/`.
-- **SDD-4b**: a mini-facade has no logic — only `pub use` re-exports of the
+- **SDD-4b**: a mini-facade has no logic - only `pub use` re-exports of the
   crates it hosts (client, contracts). No feature flags, no facade cycles.
 - **SDD-5**: version rings: the shared SDK tags `sdk-vX.Y.Z` as today; each
   mini-facade repo tags `{svc}-sdk-vX.Y.Z`. A contract change in service X
   spins only X's ring; consumers bump X's pin.
 - **SDD-6**: the platform facade `sentin8` never re-exports a mini-facade
-  (would invert the DAG — facade would pin service repos).
+  (would invert the DAG - facade would pin service repos).
 - **SDD-7**: the `{vertical}` facade crate names (`bank8`, `hotel8`, …)
-  retire with their repos — no stale aggregator names survive the move
+  retire with their repos - no stale aggregator names survive the move
   (§3.4).
 
-### 3.4 Verticals — identical treatment, scoped by the same boundary rule
+### 3.4 Verticals - identical treatment, scoped by the same boundary rule
 
 The same rule applies one level down (SDD-1: placement by shared-plane
 linkage, not naming), which measurement splits into two classes:
 
-- **Shared vertical planes STAY as `{vertical}-sdk`** — trade8 (143
+- **Shared vertical planes STAY as `{vertical}-sdk`** - trade8 (143
   import sites), exchange8 (128), email8 (101): `fixed` Price/Qty math,
   FIX/OUCH/ITCH/SOUP protocol crates, IMAP/SMTP/ical/jmap protocols, and
   the vertical's event contracts are linked by EVERY sibling service.
   These are the vertical's own `sentin8-sdk` equivalent; dissolving them
   would recreate cross-service repo cycles one level down.
-- **Per-service crates DISSOLVE into owner service repos** — bank8
+- **Per-service crates DISSOLVE into owner service repos** - bank8
   (4 contracts crates; 1 facade import site), hotel8 (12 client/contracts;
   15 sites), bill8 (9 contracts; 25 sites): each `{svc}/contracts`
   (and `client`) crate moves into its owning service repo's `sdk/`
@@ -405,13 +405,13 @@ linkage, not naming), which measurement splits into two classes:
 - Vertical contracts move into their owner service repos under `sdk/`
   mini-facades (`bank8-ledger/sdk` → `bank8-ledger-sdk` package, re-exporting
   `bank8-ledger-contracts`), mirroring the platform pattern.
-- The bank8/hotel8/bill8 facade **repos** retire — their crates
+- The bank8/hotel8/bill8 facade **repos** retire - their crates
   (`bank8-ledger-contracts`, `bank8-payments-contracts`, `bank8-fdx-contracts`,
   `bank8-regulatory-contracts`, …) move into the owner repos.
 - Import shape is preserved: `use bank8::ledger::contracts::…` becomes
   `use bank8_ledger_sdk::contracts::…` (SDD-4 shape rule, first segment
   change only).
-- **The `{vertical}` crate names retire** — after the dissolution there is no
+- **The `{vertical}` crate names retire** - after the dissolution there is no
   `bank8` crate; consumers import `bank8_ledger_sdk::contracts::…` directly.
   This is the "no legacy naming" rule applied to the vertical level: no
   stale aggregator names survive the move. (Per-repo import sweep.)
@@ -455,7 +455,7 @@ linkage, not naming), which measurement splits into two classes:
 ```
 
 `target_config.baseUrl` is resolved by the CLI at enroll time from the
-platform domain (RS §6 — the service's own endpoint, proxy-back shape);
+platform domain (RS §6 - the service's own endpoint, proxy-back shape);
 the repo declares only `internal_path` plus the `ScheduleDecl` fields.
 
 ### 4.2 Vertical SDK facades retire; per-repo registration unchanged
@@ -478,11 +478,11 @@ plane. Per-service SDKs are vendored from their owner repos.
 | Failure | Posture (unchanged contract, new transport) |
 |---|---|
 | Valkey down when shield emits | publish fails → log-only, decisions unaffected (same as today's stat outage posture) |
-| stat down | telemetry frames dropped (pub/sub ephemeral, no subscriber) — telemetry loss, no crash; stat recovers with no backfill (contract: non-important updates) |
+| stat down | telemetry frames dropped (pub/sub ephemeral, no subscriber) - telemetry loss, no crash; stat recovers with no backfill (contract: non-important updates) |
 | cron down at enroll time | enroll reports the error; schedules provision on next enroll (idempotent upsert) |
 | service down when cron fires | cron's existing retry → DLQ (unchanged) |
 | enroll provisioned schedule drift | re-enroll is idempotent; `schedule_type` per (env, domain) unique |
-| mini-facade pin stale | consumer build fails at pin mismatch — same failure class as today's SDK pin staleness |
+| mini-facade pin stale | consumer build fails at pin mismatch - same failure class as today's SDK pin staleness |
 
 ## 6. Testing strategy
 
@@ -504,24 +504,24 @@ plane. Per-service SDKs are vendored from their owner repos.
 
 Per `documents.md`, in the same change:
 
-- `sentin8-sdk/README.md` · `DESIGN.md` · `BUSINESS.md` — placement table,
+- `sentin8-sdk/README.md` · `DESIGN.md` · `BUSINESS.md` - placement table,
   facade surface, mini-facade pattern, version rings.
-- `sentin8-auth`, `sentin8-acme` — timer design replaces cron registration.
-- `sentin8-cron` — declarative schedules provisioning section.
-- `sentin8-stat` — membus ingest family.
-- `sentin8-cli` — `schedules` enroll section docs.
+- `sentin8-auth`, `sentin8-acme` - timer design replaces cron registration.
+- `sentin8-cron` - declarative schedules provisioning section.
+- `sentin8-stat` - membus ingest family.
+- `sentin8-cli` - `schedules` enroll section docs.
 - Every owner repo doc mentions its `sdk/` mini-facade.
-- Vertical group docs — facade retirement.
+- Vertical group docs - facade retirement.
 
 ## 7. Open questions
 
 1. Whether `email8-gate`'s `secrets` usage and `email8-store`'s `storage`
-   usage need pin updates after dissolution — verified in the consumer
+   usage need pin updates after dissolution - verified in the consumer
    re-pin sweep (§3.2 matrix).
 2. BFF tagging.rs test-only stat-client usage: rewritten against the
-   stat read surface (query) — verified in the consumer re-pin sweep.
+   stat read surface (query) - verified in the consumer re-pin sweep.
 3. Whether the retired vertical facade repos should remain as empty shells
-   with a redirect README, or be deleted outright — cosmetic, deferred to
+   with a redirect README, or be deleted outright - cosmetic, deferred to
    the packaging story.
 4. CI pin-freshness automation for the per-service `{svc}-sdk-vX.Y.Z` tags
-   — aggregation-CI territory, deferred with RS's equivalent open question.
+   - aggregation-CI territory, deferred with RS's equivalent open question.

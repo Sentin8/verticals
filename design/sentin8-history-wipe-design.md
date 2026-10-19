@@ -1,4 +1,4 @@
-# sentin8 — History Wipe Design (HIST): single-commit repos before going public
+# sentin8 - History Wipe Design (HIST): single-commit repos before going public
 
 > Operations design of record for removing all commit history from every
 > repository in the tree. Scope: ALL 100 git repositories on disk (root
@@ -18,8 +18,8 @@ repos. The published state must look like a single fresh import:
 - the commit message is verbatim:
   `Sync from SVN and remove client/project-related code.`,
 - the commit content is the repo's current working tree (uncommitted
-  WIP — fdx docs, auth DESIGN.md, e2e fixtures, the generated CI callers
-  — folds into the snapshot, per the owner's decision),
+  WIP - fdx docs, auth DESIGN.md, e2e fixtures, the generated CI callers
+  - folds into the snapshot, per the owner's decision),
 - the tag graph the Cargo pins resolve through stays functional.
 
 ## 2. Constraints discovered (drive the design)
@@ -29,21 +29,21 @@ repos. The published state must look like a single fresh import:
    every tag target; a lockfile left with the old rev breaks
    `--locked` builds the moment the new tags are fetched.
 2. **18 tags are pinned** across 13 SDK repos (`sdk-v0.6.3`, the
-   `{svc}-sdk-v*` mini-facade pins — including ai's stale `*-sdk-v0.2.0`
-   set — and the six `{vertical}-v0.5.3` facades). 95 further tags are
+   `{svc}-sdk-v*` mini-facade pins - including ai's stale `*-sdk-v0.2.0`
+   set - and the six `{vertical}-v0.5.3` facades). 95 further tags are
    unpinned history and are dropped with it.
 3. **Stale pins jump content by design decision**: re-creating a pinned
    tag on the snapshot means e.g. ai's `cron-sdk-v0.2.0` now resolves to
-   the same content as `cron-sdk-v0.6.2` — the versions converge on the
+   the same content as `cron-sdk-v0.6.2` - the versions converge on the
    single commit; accepted by the owner (the pins were stale drift
    anyway).
 4. **Lock rewrite must precede the snapshot commit** (the lock IS part
-   of the commit), and the snapshot SHA is final only after commit — so
+   of the commit), and the snapshot SHA is final only after commit - so
    repos are wiped in **DAG order**: a repo's locks may only reference
    the new revs of upstream SDK repos already snapshotted
    (sdk → cross-pinned facades → vertical SDKs → services).
 5. **Force-push keeps old commits reachable on GitHub** (PRs, caches,
-   ~30-day GC) — accepted by the owner; full purge would require
+   ~30-day GC) - accepted by the owner; full purge would require
    deleting + re-creating each repo (out of scope; the local backup
    outside the tree is the safety net).
 
@@ -95,6 +95,6 @@ flowchart TD
 ## 6. Out of scope
 
 - GitHub-side purge of unreachable old commits (delete-and-recreate the
-  repos, or GitHub Support) — the owner chose force-push.
+  repos, or GitHub Support) - the owner chose force-push.
 - Any content changes: the wipe folds the tree as-is; the lint-debt and
   stale-pin normalization stories (CICD-5) stay in the backlog.

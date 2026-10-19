@@ -1,4 +1,4 @@
-# sentin8 — Repository-Split Design (RS)
+# sentin8 - Repository-Split Design (RS)
 
 > **Status**: Target state. This document defines the complete repository
 > topology after splitting the `sentin8` monorepo into per-service
@@ -31,16 +31,16 @@ The monorepo couples every service to the full workspace graph:
 
 ### 1.2 Goals
 
-1. **One repo per service**: a team clones `{vertical}-{service}` and works —
+1. **One repo per service**: a team clones `{vertical}-{service}` and works -
    no platform checkout required.
-2. **Zero path dependencies** in service repos — everything shared arrives as
+2. **Zero path dependencies** in service repos - everything shared arrives as
    a pinned artifact (git-tag dependency first; private registry later).
 3. **Starters first**: `captain` + `cli` build and boot before any service.
 4. **No circular dependencies**: a flat repo DAG with the SDK plane at the
    bottom, starters on top of it, services as peers.
 5. Defects D1–D8 (§3) are fixed **in the move**, not deferred.
 
-### 1.3 System context — before → after
+### 1.3 System context - before → after
 
 ```mermaid
 graph TD
@@ -132,16 +132,16 @@ graph TD
 
 **Dependency rule (invariant RS-1)**: arrows go strictly upward. A service
 repo depends only on the SDK plane (and its vertical SDK facade when
-applicable) — never on another service repo, never on a starter, and the SDK
+applicable) - never on another service repo, never on a starter, and the SDK
 plane contains no service binary.
 
 **Starters are never linked to services** (invariant RS-2): the CLI links
 shared crates only (`config`, `jwt`, `auth-client`, `m2m`, `shield`,
 `outbox`, sqlx/valkey-glide); captain links `service-discovery`, `config`,
-`registration`, `shield`, `tls`, `audit`, `crypto`, `errors`, `middleware` —
+`registration`, `shield`, `tls`, `audit`, `crypto`, `errors`, `middleware` -
 and **execs** binaries (`--print-registration`), never links them.
 
-### 2.2 Naming — `{vertical}-{service}` repos under `{vertical}/` group folders
+### 2.2 Naming - `{vertical}-{service}` repos under `{vertical}/` group folders
 
 Repository and disk folder are `{vertical}-{service}`; apps are
 `{vertical}-{app}`. For a tidy top level, all of a vertical's repositories
@@ -149,7 +149,7 @@ live under a **group folder** `{vertical}/` (§4.4): the top level
 holds only the `sentin8/` platform group, the six `{vertical}/` groups, the
 `design/` folder, and the root aggregation files (Makefile, compose,
 backlog). Each group folder is itself the `{vertical}` group repo (§4.4
-— private GitHub repository holding the group-level docs + build
+- private GitHub repository holding the group-level docs + build
 files); each child remains an independent repository with the
 `{vertical}-{service}` name (the name lives in the repo, the
 folder is placement).
@@ -159,11 +159,11 @@ stays the event-ownership segment (`bank8:ledger:account:updated`), the DSN
 database name (`expected_database_name("bank8:ledger") == "bank8"`), and the
 vertical claim in M2M tokens.
 
-### 2.2.1 Infrastructure ownership — `sentin8/` owns the docker infra
+### 2.2.1 Infrastructure ownership - `sentin8/` owns the docker infra
 
 The dev infrastructure (PostgreSQL 18 + Valkey via `docker-compose.yml`)
 is platform-owned: `sentin8/docker-compose.yml` is the single compose file
-for the whole tree (shared by all verticals — the verticals share the
+for the whole tree (shared by all verticals - the verticals share the
 platform's PG instance and Valkey). The root keeps only an orchestration
 Makefile and docs; vertical group folders do NOT carry their own compose
 files.
@@ -174,7 +174,7 @@ WHOLE-TREE boot, not a single group. The full fleet is 60 instances
 holds ~6 PostgreSQL connections at boot (3-connection app pool + the
 3-connection `sentin8-tls` sync pool, all handshaking at once during
 tier spawning). The observed fresh-boot peak was 195/200 (2026-10-17),
-saturating the pool and crash-looping the late spawners — the ceiling is
+saturating the pool and crash-looping the late spawners - the ceiling is
 `max_connections=600` with `superuser_reserved_connections=5` kept for
 operator diagnostics. Steady-state stays far below; the headroom exists
 for the boot burst and reconnect storms (services re-handshake on cert
@@ -197,7 +197,7 @@ sentin8-sdk/
 ├── shield/               # sentin8-shield (engine; was sentin8-policy)
 ├── shell/                # sentin8-shell · sentin8-audit
 ├── sdk-crates/           # {svc}-client · {svc}-contracts for all services
-└── facade/               # crate `sentin8` — `use sentin8::...`
+└── facade/               # crate `sentin8` - `use sentin8::...`
 ```
 
 Service repos consume it as ONE pinned git dependency:
@@ -218,18 +218,18 @@ share the same dependency-resolution model.
 imports (verified in the original tree: only 2 leaf-import call sites exist
 in services/, both trivial renames). The facade is the single import surface
 for every consumer. The crate-namespace rule (leaf imports for own-workspace
-siblings) is unchanged — all shared crates are siblings inside the SDK repo,
+siblings) is unchanged - all shared crates are siblings inside the SDK repo,
 so intra-SDK imports stay leaf-style.
 
 **Remotes**: every consumer repo pins the SDK as a git dep against the
-pushed remote — `https://github.com/Sentin8/sentin8-sdk` with the same
+pushed remote - `https://github.com/Sentin8/sentin8-sdk` with the same
 tag, no Cargo.toml semantic change. A `[patch]`-style relative path dep is
 deliberately NOT used: it would silently re-couple every repo to a sibling
 checkout and defeat the single-repo dev story (RS §1.2 goal 2).
 
 ### 2.3.1 GitHub organization mapping (RS-11)
 
-Every repository publishes under its vertical's own GitHub organization —
+Every repository publishes under its vertical's own GitHub organization -
 one org per vertical, no shared vertical org. The aggregation root
 (`verticals`) stays in the `Sentin8` org alongside the platform repos:
 
@@ -249,7 +249,7 @@ Rules:
 1. **All repositories are private.** No public repos anywhere in the tree.
 2. **URLs use the canonical org login** (GitHub lowercases org logins in
    URLs; `commerce8` is the canonical form of the `Commerce8` org display
-   name — every URL must use `github.com/commerce8/…`).
+   name - every URL must use `github.com/commerce8/…`).
 3. **Repo names are unchanged**: `{vertical}-{service}`, `{vertical}-sdk`,
    `sentin8-sdk`, `sentin8-cli`, `sentin8-captain`, `verticals`. Only the
    org segment of every remote URL changes.
@@ -262,15 +262,15 @@ Rules:
    `https://github.com/Sentin8`.
 6. **Contributor copyright attribution names the owning unit** (RS-12):
    the SPDX contributor line reads
-   `Copyright Contributors to the {Brand}:{Leaf}` — the owning service,
+   `Copyright Contributors to the {Brand}:{Leaf}` - the owning service,
    SDK, or group name in the docs' canonical casing (e.g.
    `Bank8:Ledger`, `Sentin8:BFF`, `Hotel8:SDK`). Group-level and
    root-repo files use the bare vertical brand (`Bank8`, `Sentin8`).
    Platform services keep the vertical brand only inside the segment
-   (`Sentin8:Auth` — never `Bank8` inside a sentin8 repo); every repo's
+   (`Sentin8:Auth` - never `Bank8` inside a sentin8 repo); every repo's
    files cite exactly their own unit, no cross-brand attribution. The
    NOTICE prose line (`This product includes software developed by the
-   {Brand} Project`) is unchanged — it credits the project, not the unit.
+   {Brand} Project`) is unchanged - it credits the project, not the unit.
    Applies to every file carrying the SPDX header (source, config,
    NOTICE, LICENSE) in all 98 repos.
 
@@ -298,13 +298,13 @@ facade → starters → services**. The SDK repo publishes a tag; starters and
 services pin it. Per the facade-for-all decision, starters import via the
 facade like everyone else; they keep their existing direct shared-crate deps
 as well. The "starters never link services" invariant (RS-2) is preserved
-because the facade contains **no service binary** — it only re-exports SDK
+because the facade contains **no service binary** - it only re-exports SDK
 crates, which are types + clients.
 
 Runtime order (invariant RS-4): captain boots before any service; the
 health-gated tier sequence is §5.
 
-### 2.6 Verticals — per-service split under group folders
+### 2.6 Verticals - per-service split under group folders
 
 The same recipe applies to each vertical: one repo per service
 (`bank8-ledger`, `hotel8-pos`, `trade8-desk`, …), each pinning its
@@ -334,7 +334,7 @@ folder `{vertical}/` (§4.4) alongside the group's Makefile and docs.
 > **in-scope of this effort**. A D7 conversion that cannot be completed in
 > the move window is tracked in the repo-split backlog with the affected
 > cross-schema grants **removed from the code first**, leaving the read
-> temporarily degraded (warn + fail-open) until its owner API exists —
+> temporarily degraded (warn + fail-open) until its owner API exists -
 > never carried as live cross-schema grants into the new repos.
 
 ---
@@ -349,7 +349,7 @@ folder `{vertical}/` (§4.4) alongside the group's Makefile and docs.
 ├── Makefile                # dev: compose up → build → run; test hooks
 ├── docker-compose.yml      # dev PostgreSQL 18 + Valkey (isolated)
 ├── .env.example
-├── service-registration.json   # one registry entry — see §6
+├── service-registration.json   # one registry entry - see §6
 ├── catalog.json            # captain spawn config
 ├── sql/init.sql            # service schema + RLS + outbox + audit journal
 ├── src/
@@ -361,7 +361,7 @@ folder `{vertical}/` (§4.4) alongside the group's Makefile and docs.
 > **sqlx macros**: the original tree has no `.sqlx/` offline caches; its
 > `sqlx::query!` macros compile against a **live** PG connection
 > (`DATABASE_URL` from the repo `.env`). Each new service repo keeps the
-> same contract — its `.env`/`.env.example` carries the DSN, and builds run
+> same contract - its `.env`/`.env.example` carries the DSN, and builds run
 > with `cargo build` (not offline). Generating `.sqlx/` caches per repo is
 > optional hardening, not part of this split (tracked in backlog RS-9).
 
@@ -372,7 +372,7 @@ sentin8-cli/
 ├── Cargo.toml              # links: config · jwt · auth-client · m2m · shield · outbox · sqlx · valkey-glide
 ├── src/main.rs             # device-flow auth · platform management
 │                           # (db bootstrap, enroll, captain ctl)
-├── migrations/platform.sql # platform roles/schemas/grants — lives in the CLI repo
+├── migrations/platform.sql # platform roles/schemas/grants - lives in the CLI repo
 ├── Makefile
 └── README.md · DESIGN.md · BUSINESS.md
 
@@ -388,7 +388,7 @@ sentin8-captain/
 
 Migration is mechanical for every unit: `git init` a fresh repo → copy the
 unit's files from `../sentin8/` → fix manifests/imports → apply the defect
-fixes → build green → commit. **The original tree is never modified** — it
+fixes → build green → commit. **The original tree is never modified** - it
 is read as the source of truth throughout. History is not preserved (fresh
 initial commits, per decision). The new tree becomes canonical once it
 builds clean and the fleet runs from it.
@@ -397,14 +397,14 @@ builds clean and the fleet runs from it.
 green before the next), starters, services (acme → auth → proxy → bus → …),
 then verticals, apps, e2e, packaging.
 
-### 4.4 Group folders — `{vertical}/` keeps the top level tidy
+### 4.4 Group folders - `{vertical}/` keeps the top level tidy
 
 The tree's top level holds **seven group folders + root files only**:
 
 ```
 sentin8.new/
 ├── sentin8/                  # platform group folder (NOT a git repo)
-│   ├── docker-compose.yml    # THE dev infra (PG 18 + Valkey) — platform-owned (§2.2.1)
+│   ├── docker-compose.yml    # THE dev infra (PG 18 + Valkey) - platform-owned (§2.2.1)
 │   ├── Makefile              # group build: sdk → starters → 17 services · infra
 │   ├── README.md · DESIGN.md · BUSINESS.md   # group-level docs
 │   ├── sentin8-sdk/          # each child = independent git repo
@@ -427,12 +427,12 @@ sentin8.new/
 
 Rules:
 
-- **Group folders are git repositories — the `{vertical}` group repo.**
+- **Group folders are git repositories - the `{vertical}` group repo.**
   Each group folder is a PRIVATE GitHub repository named `{vertical}`
   (owner org `Sentin8`) holding the group-level files ONLY (Makefile,
   README.md, DESIGN.md, BUSINESS.md, VERSION, CHANGELOG.md,
   catalog.json, plus the group's LICENSE + NOTICE + .gitignore). The
-  child service/SDK/app repos are NOT nested inside it — they are
+  child service/SDK/app repos are NOT nested inside it - they are
   independent repos placed alongside on disk; the group repo's
   `.gitignore` ignores the `*-` sibling repo directories so a checkout
   never accidentally tracks service code. The group repo is the
@@ -444,60 +444,60 @@ Rules:
   describe the group at a glance and link to each repo's own docs.
   Group docs follow the workspace documentation standard
   (`documents.md`): README = overview, DESIGN = detailed design,
-  BUSINESS = business requirements — at the GROUP level (the service
+  BUSINESS = business requirements - at the GROUP level (the service
   repos keep their own, service-scoped versions).
 - **Infra lives with the platform** (§2.2.1): only `sentin8/` carries a
-  `docker-compose.yml`; vertical groups never do — they consume the
+  `docker-compose.yml`; vertical groups never do - they consume the
   platform's PG/Valkey over localhost.
-- The **root** is the aggregation repository — `Sentin8/verticals`
+- The **root** is the aggregation repository - `Sentin8/verticals`
   (private): the aggregation Makefile (whole-tree build delegating to
   the group Makefiles), the designs of record (`design/`), the single
   `backlog.md`, the workspace rules (`AGENTS.md`), the documentation
   standard (`documents.md`), the operator env template
   (`.env.example`), and the standard LICENSE + NOTICE + `.gitignore`.
-  The seven group folders are gitignored at the root — the root repo
+  The seven group folders are gitignored at the root - the root repo
   carries no service or group code.
 
-### 4.5 Per-repo Makefiles — self-contained dev controls
+### 4.5 Per-repo Makefiles - self-contained dev controls
 
 Every child repo ships a **Makefile** so a team can build and control their
-service without touching the group Makefile or any sibling checkout — the
+service without touching the group Makefile or any sibling checkout - the
 "clone ONE repo" promise also holds for the dev loop. The per-repo Makefile
 is for working ON that repo; the group Makefile remains the fleet surface.
 
 Shapes by repo kind (all provide `help` and `clean`):
 
 - **Service repo** (Rust binary + `service-registration.json`):
-  - `build` — `cargo build $(RELEASE)` in-repo (SDK arrives via the pin).
-  - `start` — **trimmed boot of THIS service**: if captain is down, build
+  - `build` - `cargo build $(RELEASE)` in-repo (SDK arrives via the pin).
+  - `start` - **trimmed boot of THIS service**: if captain is down, build
     CLI + captain, set the absolute `SENTIN8_CAPTAIN_BINARY_PREFIX` and a
     `SENTIN8_SERVICES` pin (see below), source the root `.env`, then
     `captain start`; if captain is up, `captain start <service_type>`
-    (the API is idempotent — already-running services are skipped).
-  - `stop` — stop only this service's instance(s) via
+    (the API is idempotent - already-running services are skipped).
+  - `stop` - stop only this service's instance(s) via
     `captain stop-instance KEY`; the captain and the rest of the fleet
     stay up. Stopping the whole fleet is the group Makefile's `stop`.
-  - `restart` — `stop` + `start` of this service only.
-  - `upgrade` — resolve this repo's live instance key(s), then
+  - `restart` - `stop` + `start` of this service only.
+  - `upgrade` - resolve this repo's live instance key(s), then
     `captain upgrade-instance` (rolling: start new → wait `Active` →
     drain → stop old).
-  - `key` — print the resolved instance key(s) (`{type}/{ip}:{port}`);
+  - `key` - print the resolved instance key(s) (`{type}/{ip}:{port}`);
     same resolution `stop`/`upgrade` use, never hand-copied values.
-  - `status` — `captain services -t <service_type>`.
-  - `enroll` — `sentin8-cli vertical enroll <this repo>`.
+  - `status` - `captain services -t <service_type>`.
+  - `enroll` - `sentin8-cli vertical enroll <this repo>`.
   - `test` / `lint` / `clean`.
   - `*-release` / `*-debug` profile wrappers (§4.6).
-- **SDK/lib repo** (`sentin8-sdk` + `{vertical}-sdk`) — `build`, `test`,
+- **SDK/lib repo** (`sentin8-sdk` + `{vertical}-sdk`) - `build`, `test`,
   `lint`, `tag` (print the §7.1 pin tag), `clean`.
-- **App repo** (Flutter) — `build` (web, version stamp), `run` (web dev
-  server), `start` (guarantees backend deps — acme, auth, proxy, bus,
-  sys, bff, web — are up via the trimmed boot, then runs the dev server;
+- **App repo** (Flutter) - `build` (web, version stamp), `run` (web dev
+  server), `start` (guarantees backend deps - acme, auth, proxy, bus,
+  sys, bff, web - are up via the trimmed boot, then runs the dev server;
   the BFF pattern means the app is a blank shell without them), `test`,
   `lint`, `pub-get`, `clean`.
-- **Starter repos** (`sentin8-cli`, `sentin8-captain`) — `build`, `test`,
+- **Starter repos** (`sentin8-cli`, `sentin8-captain`) - `build`, `test`,
   `clean` (working on that starter; fleet control stays in the group
   Makefile).
-- **Misc repos** — `sentin8-e2e` (pnpm `install`/`test`), 
+- **Misc repos** - `sentin8-e2e` (pnpm `install`/`test`), 
   `sentin8-packaging` (lint/`deb` helpers), `sentin8-flutter` (the
   Flutter package: `build`/`test`/`lint`).
 
@@ -505,7 +505,7 @@ Shapes by repo kind (all provide `help` and `clean`):
 
 1. **Absolute binary prefix.** The CLI runs from `sentin8-cli/` and a
    spawned captain resolves `SENTIN8_CAPTAIN_BINARY_PREFIX` entries
-   relative to the captain's cwd — relative entries like
+   relative to the captain's cwd - relative entries like
    `sentin8-auth/target/release` never resolve. Every per-repo Makefile
    computes the prefix with `$(abspath …)` so it is cwd-independent.
 2. **Root `.env` sourcing + run-dir pinning.** Fleet env lives in the
@@ -518,17 +518,17 @@ Shapes by repo kind (all provide `help` and `clean`):
    (ECONNREFUSED) or drops to the token-gated TCP path (401 signed-out).
    One absolute run dir for the whole tree makes every CLI invocation,
    from any repo, resolve the same control socket. Per-repo vertical env
-   files do not otherwise exist (§11.5 — the CLI derives per-service
+   files do not otherwise exist (§11.5 - the CLI derives per-service
    DSNs at enroll).
 3. **Key resolution.** `stop`/`upgrade`/`key` resolve the instance key
    from `captain services --no-infra`: rows whose first column is the
-   service type, printing the row's second-to-last field — the `KEY`
+   service type, printing the row's second-to-last field - the `KEY`
    column as the table prints it (**`ip:port`**; the stored registry key
    is `type/ip:port`, but `stop-instance`/`upgrade-instance` accept the
-   bare `ip:port` the table shows). The instance must already run — an
+   bare `ip:port` the table shows). The instance must already run - an
    unknown service fails with a clear message rather than guessing.
 4. **Trimmed boot pins.** A service repo's `start` pins
-   `SENTIN8_SERVICES` to its own service_type plus **acme** — the ONE
+   `SENTIN8_SERVICES` to its own service_type plus **acme** - the ONE
    cross-service peer every TLS-terminating service needs at boot; all
    other cross-service deps fail open (RS §5.1: DCR retries every 3s,
    outbox rows park, Shield resolves live at request time), and acme
@@ -536,7 +536,7 @@ Shapes by repo kind (all provide `help` and `clean`):
 5. **Infra guarantee.** `make start` verifies the dev data plane before
    booting (PG 18 + Valkey from the platform group's compose file,
    §2.2.1). Postgres/Valkey are hard dependencies for most of the fleet
-   (§5.1) — a service-only repo cannot boot a working instance without
+   (§5.1) - a service-only repo cannot boot a working instance without
    them, and the CLI auto-detects neither. When down, `start` runs
    `docker compose up -d` in the platform group and waits for both to
    accept connections (bounded); `infra-up` remains the manual override.
@@ -547,23 +547,23 @@ down → idempotent `captain start <service_type>` when it is up.
 #### 4.5.2 The three-level start-scope rule (STARTSCOPE-1)
 
 `SENTIN8_SERVICES` (the captain's boot-spawn filter, §3) is the ONE
-scoping mechanism — every `make start` surface pins it to its scope:
+scoping mechanism - every `make start` surface pins it to its scope:
 
 | Level | Invocation | Boot scope (captain down) | Live scope (captain up) |
 |---|---|---|---|
 | Service repo | `sentin8-auth && make start` | `SENTIN8_SERVICES=sentin8:acme,sentin8:auth` (this service + acme, §4.5.1-4) | `captain start sentin8:auth` (idempotent) |
-| Group repo | `sentin8/ && make start` — platform core only | `SENTIN8_SERVICES` = the platform core list (the 18 `sentin8:*` service types: acme, ai, app, auth, bff, bus, captain, cron, db, flow, func, post, proxy, secrets, stat, storage, sys, web — `captain` boots-skips its own entry) | `captain start <platform list>` |
-| Group repo | `bank8/ && make start` — that vertical only | `SENTIN8_SERVICES` = platform base (acme, auth, proxy, bus, sys, bff, web) + this group's `$(SERVICES)` service types | same list via API |
-| Tree root | `sentin8.new/ && make start` — everything | delegates: platform group `make start`, then each vertical group `make start` (idempotent API form when the captain came up) | same delegation |
+| Group repo | `sentin8/ && make start` - platform core only | `SENTIN8_SERVICES` = the platform core list (the 18 `sentin8:*` service types: acme, ai, app, auth, bff, bus, captain, cron, db, flow, func, post, proxy, secrets, stat, storage, sys, web - `captain` boots-skips its own entry) | `captain start <platform list>` |
+| Group repo | `bank8/ && make start` - that vertical only | `SENTIN8_SERVICES` = platform base (acme, auth, proxy, bus, sys, bff, web) + this group's `$(SERVICES)` service types | same list via API |
+| Tree root | `sentin8.new/ && make start` - everything | delegates: platform group `make start`, then each vertical group `make start` (idempotent API form when the captain came up) | same delegation |
 
 Rules:
 - **A group's `make start` never boots another group's services.** The
   vertical group's boot pin = the platform BASE (`sentin8:acme,
   sentin8:auth,sentin8:proxy,sentin8:bus,sentin8:sys,sentin8:bff,
-  sentin8:web` — the minimal TLS/identity/ingress/data plane a
+  sentin8:web` - the minimal TLS/identity/ingress/data plane a
   vertical's services call) plus its own service types (the same
   `$(SERVICES)` variable the group Makefile already uses for builds).
-  The platform group pins its own full core list — not the verticals.
+  The platform group pins its own full core list - not the verticals.
 - **The catalog stays the full union** (§3): `SENTIN8_SERVICES` filters
   only the boot SPAWN; the registry, `/start-services`, per-instance
   actions, and placement still name any enrolled type. A vertical
@@ -572,7 +572,7 @@ Rules:
 - **Boot pin vs live pin.** When captain is DOWN the Makefile exports
   the scope pin and runs `captain start` (the boot filter applies).
   When captain is UP it calls `captain start <types...>` (the API form)
-  — the env pin is NOT set on that path so an operator-exported
+  - the env pin is NOT set on that path so an operator-exported
   `SENTIN8_SERVICES` never leaks into a live fleet's semantics.
 - **`make stop` mirrors `start`**: a group's `stop` stops only that
   group's running instance rows (`captain stop-instance` per key) and
@@ -581,9 +581,9 @@ Rules:
   platform `stop`. Per-service `stop` remains §4.5's instance stop.
 - **dev-destroy.sh (BOOTSTRAP-1) is platform-scoped by contract**: it
   drops/recreates only the `sentin8` platform database (vertical
-  databases are untouched — they are owned by `vertical init`), enrolls
+  databases are untouched - they are owned by `vertical init`), enrolls
   only the platform fragments, and starts the captain with the
-  platform-core pin (§this table, row 2) — a reset never boots a
+  platform-core pin (§this table, row 2) - a reset never boots a
   vertical fleet by accident. Re-enrolling/starting a vertical after a
   reset is the vertical group's `make enroll && make start`.
 
@@ -604,7 +604,7 @@ Rules:
 
 ```bash
 docker compose up -d                    # PG 18 + Valkey
-sentin8-cli db bootstrap                # platform.sql — roles, schemas, grants
+sentin8-cli db bootstrap                # platform.sql - roles, schemas, grants
 git clone … && cd sentin8-auth && cargo build   # any single repo
 sentin8-cli vertical enroll sentin8-auth/       # per-repo registration (§6)
 sentin8-cli captain start               # captain spawns the fleet, health-gated
@@ -623,7 +623,7 @@ tier 6   bff, web
 ```
 
 Each tier waits for tier N−1 to report `Active` (bounded wait; warn + proceed
-after gate timeout — degraded old behavior, never a boot hang).
+after gate timeout - degraded old behavior, never a boot hang).
 
 ### 5.4 Running services individually
 
@@ -637,7 +637,7 @@ cd sentin8-auth && cargo run                          # bare run: only PG is har
 
 ## 6. Per-repo registration (composable enrollment)
 
-Each repo ships **`service-registration.json`** — exactly one registry
+Each repo ships **`service-registration.json`** - exactly one registry
 entry, self-describing:
 
 ```json
@@ -674,7 +674,7 @@ Each repo's `catalog.json` stays composable through
 
 ### 6.1 Registration semantics
 
-- `--print-registration` runs at enroll time (CLI execs the binary) —
+- `--print-registration` runs at enroll time (CLI execs the binary) -
   per-repo registration does not change this.
 - SQL application per-repo: `sentin8-cli vertical init {repo}` applies the
   repo's `sql/` dirs; `db bootstrap` role bootstrap is unchanged.
@@ -683,7 +683,7 @@ Each repo's `catalog.json` stays composable through
   registry entry).
 - App repos ship the same `service-registration.json` carrying their app
   declaration INLINE (WARN-11, single-file self-description): `apps:
-  [{slug, web_dir, listing}]` — `web_dir` is the web root relative to the
+  [{slug, web_dir, listing}]` - `web_dir` is the web root relative to the
   repo root (`build/web` for Flutter builds), `listing` IS the app-store
   listing object. The `path` pointer to an external `app.json` remains
   supported as the legacy form; the app-store listing, the `captain:app_dir:{slug}`
@@ -739,7 +739,7 @@ It is the only place that builds the whole platform from source.
 ## 10. Invariants
 
 - **RS-1** Repo arrows go strictly upward: service → SDK, vertical-SDK → platform-SDK, never reversed.
-- **RS-2** Starters (cli, captain) link no service binary — they exec binaries only.
+- **RS-2** Starters (cli, captain) link no service binary - they exec binaries only.
 - **RS-3** Build order: SDK → starters → services.
 - **RS-4** Captain spawns before any service; tiers are health-gated (D6).
 - **RS-5** A service repo's `Cargo.toml` contains no path-style dependencies on sibling repos; shared code arrives via the pinned SDK git dep.
@@ -752,22 +752,22 @@ It is the only place that builds the whole platform from source.
 - **RS-12** Per-repo Makefiles are self-contained: a service repo's `make start` works from a bare
   clone (builds CLI + captain itself when needed), uses an absolute `BINARY_PREFIX`, sources the
   root `.env`, pins `SENTIN8_SERVICES` to its trimmed boot set, and its `stop` touches only its own
-  instance(s) — never the whole fleet.
+  instance(s) - never the whole fleet.
 
 ## 11. Open questions
 
-1. **SDK repo layout depth** — shared crates keep the semantic grouping
+1. **SDK repo layout depth** - shared crates keep the semantic grouping
    (core/ identity/ tls/ bus/ shield/ shell/ sdk-crates/) inside
    `sentin8-sdk`; a later flatten is cosmetic.
-2. **Dev loop for shared-plane changes** — developers work in
+2. **Dev loop for shared-plane changes** - developers work in
    `sentin8-sdk` and bump the tag; a `[patch]`-style local override task is
    deferred.
-3. **CI pin-staleness automation** — bump-bot and pin-freshness checks are
+3. **CI pin-staleness automation** - bump-bot and pin-freshness checks are
    aggregation-CI territory; exact tooling deferred to the packaging story.
-4. **Per-service DSN roles across enroll order** — a service whose DSN role
+4. **Per-service DSN roles across enroll order** - a service whose DSN role
    creation depends on `enroll` order across repos is tracked in backlog
    RS-7.
-5. **Per-repo (vertical) env files** — per-repo Makefiles source only the
+5. **Per-repo (vertical) env files** - per-repo Makefiles source only the
    root `.env`; when vertical DSN provisioning needs env-file isolation
    (e.g. bank8 keys separate from hotel8), the CLI will manage per-group
    `.env` files and the Makefiles will source the root first, group

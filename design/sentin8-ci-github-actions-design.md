@@ -1,4 +1,4 @@
-# sentin8 — CI/CD Design (CICD): GitHub Actions per repository
+# sentin8 - CI/CD Design (CICD): GitHub Actions per repository
 
 > Design of record for continuous integration and delivery across the whole
 > repository tree (RS §2.1 topology: 8 GitHub orgs, ~98 repositories, all
@@ -11,19 +11,19 @@
 
 ### 1.1 Problem
 
-The tree has no CI. Today every gate — build, test, fmt, the SDK release
-cascade, the e2e suites — runs on one operator's workstation against the
+The tree has no CI. Today every gate - build, test, fmt, the SDK release
+cascade, the e2e suites - runs on one operator's workstation against the
 live local fleet (`make build`, hand-run Playwright, hand-run tag-pin
 sweeps). Nothing blocks a broken `main` in any of the ~98 repositories,
 and the SDK version ring (RS §7.1) is re-pinned entirely by hand.
 
 ### 1.2 Goals
 
-1. Every repository gets a **working pipeline on push/PR** — the correct
+1. Every repository gets a **working pipeline on push/PR** - the correct
    surface for its class (Rust, Flutter, e2e, docs-only).
 2. The **SDK version ring automates**: tag push → release build →
    fan-out dispatch → consumer pin-bump PRs (behind a GitHub App gate).
-3. One place owns the pipeline logic — `Sentin8/sentin8-ci`, public,
+3. One place owns the pipeline logic - `Sentin8/sentin8-ci`, public,
    holding **reusable workflows** every repo calls with a thin caller.
 4. An **aggregation nightly** (RS §7.3) that clones the whole public
    tree, builds in DAG order, boots the fleet, and runs both e2e suites.
@@ -35,7 +35,7 @@ and the SDK version ring (RS §7.1) is re-pinned entirely by hand.
 
 ```mermaid
 graph TD
-    subgraph ORG["GitHub — 8 orgs, ~98 public repos"]
+    subgraph ORG["GitHub - 8 orgs, ~98 public repos"]
         subgraph S8["Sentin8 org"]
             CI["Sentin8/sentin8-ci<br/>(reusable workflows + manifests)"]
             ROOT["Sentin8/verticals<br/>(aggregation root)"]
@@ -57,7 +57,7 @@ graph TD
 ```
 
 **Why a central repo works**: reusable workflows from a **public** repo
-are callable from any org (private reusable workflows are same-org only —
+are callable from any org (private reusable workflows are same-org only -
 the constraint that forced this shape once repos are public). Org
 allowlists permit `Sentin8/sentin8-ci/**` once per org.
 
@@ -100,11 +100,11 @@ sequenceDiagram
 ```
 
 Blocking vs advisory (measured 2026-10-14): fmt drift is 800–1000 files in
-verticals, clippy `-D warnings` yields 78 errors in `sentin8-auth` alone —
+verticals, clippy `-D warnings` yields 78 errors in `sentin8-auth` alone -
 **build and test block; fmt and clippy report** until the debt stories
 (CICD-5) land, then the reusable workflow flips one input to blocking.
 `SQLX_OFFLINE=true` is mandatory everywhere (a live `DATABASE_URL` makes
-sqlx macros hit the cert-gated DB and fail compilation — verified).
+sqlx macros hit the cert-gated DB and fail compilation - verified).
 
 Concurrency per caller: `group: ci-${{ github.ref }},
 cancel-in-progress: true`. Permissions: `contents: read` in every
@@ -117,12 +117,12 @@ repository-dispatch, setup-node v7.1.0).
 
 Flutter lane: `flutter-version: 3.47.2` exact pin, `cache: true` +
 `pub-cache: true`; the `sentin8-flutter` path dep is `git clone`d to
-the pubspec-declared location (outside the workspace — checkout
+the pubspec-declared location (outside the workspace - checkout
 `path` is workspace-relative, a run-step clone is not constrained);
-`flutter analyze` (advisory while info-debt exists — fatal-infos is
+`flutter analyze` (advisory while info-debt exists - fatal-infos is
 the default and dash carries 31 info findings; CICD-5 flips it) →
 `flutter test` (blocking) → `flutter build web
---no-tree-shake-icons` (blocking — the RFW renderer's dynamic
+--no-tree-shake-icons` (blocking - the RFW renderer's dynamic
 IconData hex code points require it) + `build/web` artifact upload.
 
 ### 2.2 SDK release + consumer cascade (the version ring, automated)
@@ -147,20 +147,20 @@ Mechanics (all from research, enforced by design):
 - **Keyed by SDK REPO, not pin name**: a git-pinned workspace exports
   MANY crates under one tag (`sentin8`, `sentin8-middleware`,
   `sentin8-m2m`, `sentin8-tls`, `sdk_git` all resolve from
-  `Sentin8/sentin8-sdk` at `sdk-v0.6.3`) — so one release dispatch per
+  `Sentin8/sentin8-sdk` at `sdk-v0.6.3`) - so one release dispatch per
   consumer, whose receiver rewrites every pin line pointing at that
   repo. `consumers.json` maps the SDK's repo slug → consumer slugs
-  (verified: 13 SDK repos — sentin8-sdk (67 consumers), 6 vertical
+  (verified: 13 SDK repos - sentin8-sdk (67 consumers), 6 vertical
   SDKs, 6 mini-facades).
 
 - **Trigger**: `on: push: tags: ['{prefix}*']` in the SDK repo's caller;
   the sync script derives each SDK repo's tag prefix from the tags its
   consumers actually pin (`sdk-v`, `cron-sdk-v`, `bank8-v`, …).
 - **GITHUB_TOKEN cannot cascade** (events it creates start no runs) and
-  its auto-PRs stall approval-required — the cascade is **gated behind a
+  its auto-PRs stall approval-required - the cascade is **gated behind a
   GitHub App** installed in all 8 orgs (secrets `SENTIN8_CI_APP_ID` +
   `SENTIN8_CI_APP_PRIVATE_KEY`, org-level, passed explicitly to the
-  reusable workflow — `secrets: inherit` is same-org only). Until the
+  reusable workflow - `secrets: inherit` is same-org only). Until the
   App exists the step no-ops: the design ships enabled-but-unarmed.
 - **`repository_dispatch`** (not workflow_dispatch: payload-carrying,
   receiver filters on `types: [sdk-released]`): ≤10 top-level payload
@@ -170,10 +170,10 @@ Mechanics (all from research, enforced by design):
 - **Bump receiver**: rewrites every `Cargo.toml` pin of that SDK to the
   new tag, `cargo update`, build+test, opens a pin-bump PR
   (App token → its CI runs; GITHUB_TOKEN fallback → approval-gated).
-  This automates today's hand-run cascade — including the
+  This automates today's hand-run cascade - including the
   mini-facade retag chain that bit twice (RS §7.1 / backlog SDK cascade
   lessons): each mini-facade is itself a consumer, so its sdk-bump PR
-  merge → its release.yml tags `cron-sdk-v0.6.3` → its consumers bump —
+  merge → its release.yml tags `cron-sdk-v0.6.3` → its consumers bump -
   the ring closes one link at a time with CI at every step.
 
 ### 2.3 Aggregation nightly (RS §7.3)
@@ -182,53 +182,53 @@ Lives in the root `Sentin8/verticals` repo: `schedule` (03:00 UTC) +
 `workflow_dispatch`, calls `aggregation-nightly.yml@ci-v1`. Single
 `ubuntu-24.04` job, `timeout-minutes: 300`, steps:
 
-1. Clone the whole tree — anonymous, per `repos.json` (sync-script
+1. Clone the whole tree - anonymous, per `repos.json` (sync-script
    generated: org/name/class per repo), exact disk layout (RS §4.4) so
    every relative path (path deps, compose mounts, Makefile `../.env`)
    resolves.
-2. DAG build — per-repo `cargo build --release --locked` in RS §2.5
+2. DAG build - per-repo `cargo build --release --locked` in RS §2.5
    order (platform SDK → starters → 17 platform services → vertical
    SDKs → vertical services; the vertical group Makefiles hardcode
    the debug profile, so the nightly drives cargo directly),
    `SQLX_OFFLINE=true`, git-SHA build stamps intact (clones carry
    `.git`; `--depth 1` preserves the HEAD hash). Release profile only
-   — the fleet must never mix profiles, and the e2e fixtures resolve
+   - the fleet must never mix profiles, and the e2e fixtures resolve
    `target/release/sentin8-cli`.
-3. Flutter surfaces — `make -C sentin8/sentin8-dash build` +
+3. Flutter surfaces - `make -C sentin8/sentin8-dash build` +
    `sentin8-auth-ui` (the BFF serves these bundles).
-4. Environment — `cp .env.example .env`, then generate per-run values:
+4. Environment - `cp .env.example .env`, then generate per-run values:
    `openssl rand -base64 32` for the BFF/auth/secrets master keys;
    workspace-absolute paths for `SENTIN8_{RUN,LOG,SECRETS}_DIR`,
    storage root, auth-ui dir; `SENTIN8_DOMAIN=local.sentin8.dev`;
    vertical catalog paths for all six groups.
-5. Runner prerequisites — `sudo sysctl -w
+5. Runner prerequisites - `sudo sysctl -w
    net.ipv4.ip_unprivileged_port_start=80` (proxy binds :443);
    dnsmasq with `address=/local.sentin8.dev/127.0.0.1` +
    upstream forwarding (replicates the operator's router DNS; the e2e
    suites create orgs/envs at runtime, so hostnames cannot be enumerated
-   into /etc/hosts — a wildcard resolver is required).
-6. Infra + seed — `make -C sentin8 infra-tls` (Acme mints the infra TLS
+   into /etc/hosts - a wildcard resolver is required).
+6. Infra + seed - `make -C sentin8 infra-tls` (Acme mints the infra TLS
    pairs + HBA/ident seeds; certificate identity means **no database
    secrets exist anywhere**), `docker compose up -d` (pgvector:pg18 +
    Valkey 9), `sentin8-cli db bootstrap` (platform SQL + registry),
-   `vertical init` + `vertical enroll` per group — taking each child
+   `vertical init` + `vertical enroll` per group - taking each child
    REPO DIRECTORY (composable registration, RS §6; the CLI never
-   accepts group names) — greenfield: no migration code.
-7. Fleet — `SENTIN8_CAPTAIN_BINARY_PREFIX` chained over every repo's
+   accepts group names) - greenfield: no migration code.
+7. Fleet - `SENTIN8_CAPTAIN_BINARY_PREFIX` chained over every repo's
    `target/release` dir (bare catalog binary names resolve through
-   the prefix — captain's `resolve_binary_path`), `make -C sentin8
+   the prefix - captain's `resolve_binary_path`), `make -C sentin8
    start-release`, health-wait via curl probes on
    `dash.ops.sys.local.sentin8.dev` (7-minute deadline).
-8. Suites — `sentin8-e2e`: `test:cli` then `test:ui` (headless,
+8. Suites - `sentin8-e2e`: `test:cli` then `test:ui` (headless,
    CanvasKit page harvest); `bank8-e2e`: full lifecycle. Reports +
    traces uploaded `if: !cancelled()`.
-9. Pin-freshness audit (advisory) — every git-tag pin in every
+9. Pin-freshness audit (advisory) - every git-tag pin in every
    `Cargo.toml` vs `git ls-remote --tags` of its repo: report stale pins
    (the manual cascade's blind spot).
-10. Teardown — `make -C sentin8 stop`, `docker compose down`.
+10. Teardown - `make -C sentin8 stop`, `docker compose down`.
 
 The nightly is the only tier that exercises DB-backed integration tests
-(live seeded PG), cross-service flows, and the fleet boot — it is
+(live seeded PG), cross-service flows, and the fleet boot - it is
 expected to need iteration against a real runner (documented open
 question); the per-repo lanes are deliberately boring.
 
@@ -237,10 +237,10 @@ question); the per-repo lanes are deliberately boring.
 `sentin8-ci/scripts/sync-ci.py` (run by the operator from the tree root):
 classifies every repo by markers (§1.4), parses all `Cargo.toml` git-tag
 pins to derive (a) the SDK-repo set, (b) each SDK's tag prefix, (c) the
-consumer graph — then writes into each repo: the class-appropriate
+consumer graph - then writes into each repo: the class-appropriate
 `.github/workflows/ci.yml` caller, `release.yml` (SDK repos),
 `sdk-bump.yml` (consumers), `rust-toolchain.toml` (Rust class,
-`channel = "1.98.1"` + fmt/clippy components — the toolchain file wins
+`channel = "1.98.1"` + fmt/clippy components - the toolchain file wins
 over any action input, same version locally and in CI),
 `.github/dependabot.yml` (github-actions ecosystem), and regenerates the
 ci repo's `repos.json` + `consumers.json`. Idempotent; `--dry-run`
@@ -257,7 +257,7 @@ settings; (3) commit callers per repo (done by the sync run) and push;
 + `test` (Flutter); (5) org-level: secret scanning + push protection,
 Dependabot alerts, CodeQL default setup (Rust supported, `none` build
 mode); (6) pre-publication `gitleaks` history sweep of every repo
-(dev `.env` values are generated and disposable — audit anyway);
+(dev `.env` values are generated and disposable - audit anyway);
 (7) create the cascade GitHub App (contents:read/write +
 pull-requests:write on all orgs), set the two org secrets.
 
@@ -280,10 +280,10 @@ pull-requests:write on all orgs), set the two org secrets.
 ## 4. Open questions
 
 1. First real nightly run will iterate (runner DNS quirks, fleet memory
-   ceiling on 16 GB, bootstrap timing) — budget a tuning pass.
-2. e2e typecheck debt (`tsc --noEmit` currently red in sentin8-e2e) —
+   ceiling on 16 GB, bootstrap timing) - budget a tuning pass.
+2. e2e typecheck debt (`tsc --noEmit` currently red in sentin8-e2e) -
   advisory until fixed, tracked with the lint debt story.
 3. Health8 has repos planned but none exist yet; sync script picks them
    up automatically when they appear.
 4. ARM64 runners (`ubuntu-24.04-arm`, free) as a second matrix leg for
-   the nightly build — deferred until x86 is green.
+   the nightly build - deferred until x86 is green.
