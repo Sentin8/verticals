@@ -144,6 +144,23 @@ flowchart TD
 
 Mechanics (all from research, enforced by design):
 
+- **`secrets` context is not readable in step `if:` conditions (resolved
+  defect 2026-10-19)**: the first cut of `sdk-release.yml`/`sdk-bump.yml`
+  gated the cascade App-token mint with
+  `if: ${{ secrets.SENTIN8_CI_APP_ID != '' && … }}`. GitHub Actions
+  rejects the `secrets` context inside step-level `if:` at workflow-parse
+  time - every caller run died before spawning a single job with
+  "This run likely failed because of a workflow file issue" (zero jobs,
+  no logs), which made the ENTIRE release lane red on every SDK repo
+  since CICD-4 while every `ci.yml` lane stayed green (its `rust.yml`
+  reusable carries no such gate). The fix re-expresses the gate with
+  constructs `if:` supports: the mint step runs unconditionally with
+  `continue-on-error: true` (empty secrets fail it harmlessly) and the
+  fan-out/PR steps keep their existing
+  `if: ${{ steps.app-token.outputs.token != '' }}` /
+  `token: … || github.token` guards - the documented graceful-no-op
+  contract is unchanged.
+
 - **Keyed by SDK REPO, not pin name**: a git-pinned workspace exports
   MANY crates under one tag (`sentin8`, `sentin8-middleware`,
   `sentin8-m2m`, `sentin8-tls`, `sdk_git` all resolve from
