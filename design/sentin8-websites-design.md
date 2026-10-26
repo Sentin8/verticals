@@ -170,6 +170,17 @@ Rules:
 - Output: `docs/reference/{unit}/` files with title frontmatter,
   provenance note, and a `_category_` so Docusaurus autogenerates the
   reference sidebar.
+- **Header badge stripping (WEB-18).** Source READMEs open with
+  shields.io badge rows whose link targets are repo-relative
+  (`../../LICENSE`, `../LICENSE`) or repo-doc routes - broken links once
+  the README renders inside the site (`onBrokenLinks: throw` fails the
+  build). The harvester strips the header badge ROW before writing the
+  page: the badge block is a contiguous run after the H1 (skipping blank
+  lines and quote-lead prose), where a hard-wrapped badge link
+  (target `)](` on the next line) stays part of the run; any residual
+  repo-relative `LICENSE` link target elsewhere in the body re-points to
+  the repo's GitHub URL. The badge block is presentation-only (the sites
+  surface license/docs links themselves).
 - Failure policy: a missing local copy falls back to remote; a missing
   remote **fails the build** (docs never silently trail).
 
@@ -225,7 +236,7 @@ data edit + optional hand-authored pages.
 
 | Route | Content |
 |---|---|
-| `/` | Hero · **Where-to-start strip** (explicit titled links: Product tour / Security / Get started, each with a one-line explanation) · unit card grid (every service, app, SDK - card title, kind badge, description, "Explore →") · security banner ("inherits Sentin8's post-quantum model" → sentin8.dev) · cross-vertical consumers · footer with clear section links |
+| `/` | Hero · **Where-to-start strip** (explicit titled links: Product tour / Security / Get started, each with a one-line explanation) · unit card grid (every service, app, SDK - card title, kind badge, description, "Explore →") · security banner ("inherits Sentin8's post-quantum model" → sentin8.dev) · cross-vertical consumers · footer with clear section links · family showcase cards **excluding any family-hidden vertical** (see §4.6) |
 | `/docs/` | Vertical overview (from the group README narrative) |
 | `/docs/products/{unit}/` | Per product - a **multi-page dossier**: Overview & use cases in detail (hand-authored) · **Architecture (DDD)** - the full harvested DESIGN.md · **Business rules (BRD)** - the full harvested BUSINESS.md · **Security** - the canonical harvested SECURITY.md. The reference detail lives INSIDE the product, not in a separate reference tree. |
 | `/docs/apps/{app}/` | Per app: purpose, screens, security posture (full detail, same dossier pattern) |
@@ -248,6 +259,15 @@ fully unstyled landing. The starter templates must not reintroduce it.
 **Typography rule (owner decision 2026-10-16).** Docs prose uses plain
 hyphens; no em-dash characters anywhere in site content.
 
+**Footer layout rule (owner request 2026-10-25: footer menus horizontal,
+not vertical).** Every site's multi-column footer renders as a single
+horizontal strip: `.footer__links` is a flex row (wrapping), each
+column's `.footer__items` is an inline flex row - titled groups
+("Site", "All sites", …) flow left-to-right instead of stacking their
+links vertically. Below 960px the groups drop onto separate lines but
+items stay inline per group. Owned by `theme.css`, applies to all
+sites automatically.
+
 ### 4.6 Cross-vertical references
 
 `CrossSiteLink` (engine component) renders absolute links with the
@@ -257,13 +277,28 @@ each `{vertical}.dev`. Cross-site links are **content, not config**: they
 live in `site.json:crossrefs` and hand-authored pages, never in engine
 or platform code.
 
+**Family visibility rule (owner decision 2026-10-25).** Every vertical
+site is built and deployed identically - a family-hidden vertical ships
+the same theme, docs tree, and pages; only its *listing* on sibling
+sites changes. `ALL_SITES` in the engine carries the roster with one
+boolean per entry: `familyHidden: true` marks a vertical built but
+delisted. `makeSiteConfig` filters the roster to `s.key === site.vertical
+|| !s.familyHidden` before rendering it into the navbar domain dropdown
+and the footer "All sites" column - so hotel8.dev self-lists normally
+while the six sibling sites never name it. Showcase cards are content
+(site.json): a family-hidden vertical's card is simply absent from
+sibling `site.json` files; the PLATFORM site keeps the full roster (it
+documents the family, including hidden members). Removing the flag
+re-lists the vertical everywhere in one release-ring cascade.
+
 ## 5. Site engine (`@sentin8/site-engine`)
 
 | Piece | Role |
 |---|---|
-| `makeSiteConfig()` | One factory producing the whole Docusaurus config: theme-mermaid + search-local, MDX, navbar (site name, Products, Security, Developers, Reference, cross-vertical dropdown), footer (all `{vertical}.dev` links), custom fields from `site.json`. Also mounts the interactive OpenAPI layer (`docusaurus-plugin-openapi-docs` + theme) and injects the webpack interop loaders that keep the openapi-docs CJS libs browser-safe (see OQ-4) |
+| `makeSiteConfig()` | One factory producing the whole Docusaurus config: theme-mermaid + search-local, MDX, navbar (site name, Products, Security, Developers, Reference, cross-vertical dropdown), footer (all `{vertical}.dev` links) - both filtered through the §4.6 family-visibility rule (a `familyHidden` roster entry appears only on its own site), custom fields from `site.json`. Also mounts the interactive OpenAPI layer (`docusaurus-plugin-openapi-docs` + theme) and injects the webpack interop loaders that keep the openapi-docs CJS libs browser-safe (see OQ-4) |
+| `ALL_SITES` roster | The engine's single site list: `{ key, name, familyHidden? }` per vertical - the one place a vertical is marked built-but-unlisted from sibling sites |
 | `makeSidebars()` | Autogenerated reference sidebar + product sidebar from `site.json` |
-| `theme.css` | Design system: Quicksand (Google Fonts, weights 300-700), 4px grid, glass panels, Royal Gold `#D4AF37` platform accent, per-site `--site-accent` CSS var, dark-first, WCAG AA |
+| `theme.css` | Design system: Quicksand (Google Fonts, weights 300-700), 4px grid, glass panels, Royal Gold `#D4AF37` platform accent, per-site `--site-accent` CSS var, dark-first, WCAG AA; **horizontal footer** (the multi-column footer renders as one strip - groups flow left-to-right inline, items wrap within each group, copyright centered beneath; overrides Infima's stacked-column default) |
 | Components (MDX-usable, JSX-free internals) | `Landing`, `Hero`, `SecurityPillars`, `ServiceGrid/ServiceCard`, `ProductGrid/ProductCard`, `AppGrid/AppCard`, `SdkGrid/SdkCard`, `UseCaseGrid/UseCaseCard`, `ApiTable/ApiRow`, `MethodBadge`, `ScopeBadge`, `CrossSiteLink`, `ProvenanceNote`, `QuickStart` |
 | `scripts/harvest.mjs` | The §4.2 harvester |
 | `scripts/new-site.mjs` | Scaffolder: new `{vertical}-site` from `site.json` (config, sidebars, landing, workflow caller) - the `sync-ci.py` analogue |
