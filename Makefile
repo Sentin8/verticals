@@ -19,8 +19,7 @@ SHELL := /bin/bash
 VERTICALS := bank8 hotel8 trade8 bill8 email8 exchange8
 
 .PHONY: help build build-platform build-verticals infra-up infra-down status \
-	start stop
-
+        start stop clean
 help: ## Show this help
 	@echo "sentin8.new aggregation (grouped layout, RS 4.4)"
 	@echo ""
@@ -61,6 +60,17 @@ start: ## Start the whole tree: platform group, then every vertical group
 # one fleet; per-group leaves are for selective teardown).
 stop: ## Stop the whole tree (platform stop: captain + all instances)
 	@$(MAKE) -C sentin8 stop
+
+clean: ## Clean the whole tree: every child repo's clean, then .run/.tmp at the root
+	@$(MAKE) -C sentin8 clean
+	@for v in $(VERTICALS); do \
+		echo "── clean $$v/"; \
+		$(MAKE) -C $$v clean || exit 1; \
+	done; \
+	$(MAKE) -C openfin8 clean || exit 1; \
+	$(MAKE) -C health8 clean; \
+	echo "── tree-level .run/.tmp"; \
+	rm -rf .run .run/logs .tmp
 
 status: ## Per-group repo HEADs
 	@for g in sentin8 $(VERTICALS); do \
