@@ -36,7 +36,7 @@ is not a self-healing failure:
 - **email8** additionally never declared its `{leaf}-audit` m2m grants, so
   `auth.m2m_scope_grants` holds no `mta-audit`/`store-audit`/`gate-audit`/
   `access-audit` rows - the pusher's `{leaf}-audit` certificate is minted
-  but unenrollable (the BUSPOLICY-1 class). Even with a table present, the
+  but unenrollable (the no-grant class). Even with a table present, the
   push would 401 at Sys's scope gate.
 
 ### 1.2 The contract (why this is one design, not six fixes)
@@ -44,7 +44,7 @@ is not a self-healing failure:
 The single DDL contract lives in the SDK: `sentin8_audit::audit_journal_sql(
 schema)` - 15 columns, a partial unpushed index, RLS enabled and forced, and
 the `audit_journal_dml` policy. Every service mirrors this block into its own
-`sql/` files (WARN-14's precedent: the SDK shape changed once, and every
+`sql/` files (the WARN-class precedent: the SDK shape changed once, and every
 mirrored init.sql had to be refreshed in the same change). The pusher resolves
 the table UNQUALIFIED (`FROM audit_journal`) through the service role's
 search_path, so **the journal must live in the schema that leads the role's
@@ -111,7 +111,7 @@ CREATE POLICY audit_journal_dml ON {leaf}.audit_journal
     WITH CHECK (sentin8_context_initialized() AND env_id = sentin8_current_env_id());
 ```
 
-`env_id` is NOT NULL (the WARN-14-era nullable shape is retired everywhere -
+`env_id` is NOT NULL (the-era nullable shape is retired everywhere -
 RLS requires the env comparison).
 
 ### 2.4 Authorization (the `{leaf}-audit` m2m grant)
@@ -173,5 +173,5 @@ Per AGENTS.md ("No migration code - this is a new platform"):
 
 None for the provisioning scope. The pusher's 7s WARN cadence during a
 permanent failure is noisy-but-visible (by design - fail loud); a
-log-frequency cap belongs to the log-rotation work (CAPTCPU-1 item 4), not
+log-frequency cap belongs to the log-rotation work (item 4), not
 to the audit plane.

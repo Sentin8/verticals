@@ -42,7 +42,7 @@ infra-up: ## Start dev PG 18 + Valkey (owned by sentin8/, §2.2.1)
 infra-down: ## Stop the dev infra
 	@$(MAKE) -C sentin8 infra-down
 
-# STARTSCOPE-1 (RS §4.5.2, the three-level rule): the ROOT start is
+# (RS §4.5.2, the three-level rule): the ROOT start is
 # the whole-tree orchestration — the platform group boots first (the
 # core fleet + captain), then every vertical group joins via its own
 # group-scoped start (idempotent `captain start <types>` when the

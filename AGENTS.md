@@ -50,6 +50,19 @@ written artifacts (code comments, commit messages, design docs, backlog
 entries, log messages) MUST be in **English**. No other languages, even if the
 user writes in another language.
 
+## No em-dash in documentation or code comments
+
+NEVER use the em-dash (U+2014) or en-dash (U+2013) range/pause glyph
+inside any written artifact that lands in the repo: code comments (Rust `//`,
+`///`, `//!`), design/business docs (`README.md`, `DESIGN.md`, `BUSINESS.md`),
+changelogs, commit messages, and backlog entries. Use a plain hyphen with a
+space on both sides (`text - text`) for the same pause/appositive meaning.
+Existing em/en-dashes are scrubbed on sight: when touching a file, replace
+them in the lines you are already editing; for a bulk pass, run a tree-wide
+conversion (every long dash rewritten to ' - ' on the lines it appears on).
+Ranges like `3-5` and compound names like `X25519MLKEM768` keep their plain
+hyphen - this rule bans only the long-dash punctuation glyphs.
+
 ---
 
 ## Temporary files - always under `.tmp/`

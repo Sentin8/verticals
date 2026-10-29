@@ -3,7 +3,7 @@
 > Cross-cutting design of record for closing the gap between the HTTP routes
 > each service actually serves and what it reports in its OpenAPI 3.1 spec
 > (`docs/openapi.json`) - the file every service's website "API (OpenAPI)"
-> page is rendered from (WEB-14, `sentin8-websites-design.md` §4.2/§OQ-4).
+> page is rendered from (`sentin8-websites-design.md` §4.2/§OQ-4).
 > Applies to ALL spec-owning services across the tree: the 17-platform-tree
 > Rust services, the six vertical workspaces (bank8, bill8, email8,
 > exchange8, hotel8, trade8).
@@ -40,7 +40,7 @@ services, plus ~45 spec paths that no longer exist in code):
   post's gateway/DLQ operations).
 - **trade8 (6 services) and exchange8 (14 services) have NO OpenAPI
   surface at all** - no spec struct, no annotation, no `docs/openapi.json`;
-  they were the known WEB-14 coverage gaps (OQ-4), now scheduled.
+  they were the known coverage gaps (OQ-4), now scheduled.
 - A handful of **stale spec entries** document handlers that no longer
   exist (post-rename drift - e.g. storage's `{object_path}` single-segment
   form, sys's `/archive` old path shape, hotel8-pms's retired flat
@@ -130,7 +130,7 @@ flowchart TD
    `fallback_service` SPA hosts (auth's hosted UI) and proxy-style
    pass-through routers (sentin8-proxy, sentin8-bff proxy surface,
    sentin8-web) carry no per-route documentation - bff/proxy/web stay
-   out of scope (no utoipa surface by design, WEB-14 OQ-4).
+   out of scope (no utoipa surface by design OQ-4).
 9. **The dump is regenerated from the binary, never edited by hand.**
    `--print-registration --section=openapi` > `docs/openapi.json`
    (greenfield: re-run `vertical enroll`/registration when schema-visible
@@ -158,7 +158,7 @@ flowchart TD
    silently.
 
 11. **Recursive types get hand-written, recursion-safe schemas
-    (established 2026-10-19 - the OAPEC-9 sites lesson).** A recursive
+    (established 2026-10-19 - the sites lesson).** A recursive
     tree type (the SDK's RFW `RemoteWidget`: containers hold child
     trees) must NOT carry a bare self-`$ref` component body - utoipa's
     derive would inline the variant tree infinitely at generation time,
@@ -215,7 +215,7 @@ flowchart TD
   dispatching requests - via `Router::into_iter()` (yields `Route`
   + typed state) combined with `MethodRouter`'s endpoint listing, or
   `Router::as_service`-free `route_id` listing (the exact stable API is
-  settled during OAPEC-1; axum 0.8's `Router::routes()`/
+  settled during; axum 0.8's `Router:: routes`/
   `NestedMap::iter()` shape - no HTTP round-trips needed).
 - Exemptions per service (documented in the service's DESIGN.md §API
   Surface): SPA-asset fallback (`/` + fallback_service), `GET
@@ -236,13 +236,13 @@ drift-guard test + docs refresh (README/DESIGN/BUSINESS per
 Estimates assume mostly-annotated services first (fast path = paths()
 entries only), unannotated-heavy services after.
 
-1. **OAPEC-1 Shell helper + drift-guard pattern + Shield shared
+1. **Shell helper + drift-guard pattern + Shield shared
    annotation** (`sentin8-sdk`): `assert_openapi_covers_router` test
    helper; annotate the shell's `fwd!` policy-admin wrappers +
    `health_handler_with_gauge` (documented spec operation, tag `meta`)
    + the shell's shared admin-UI mount if it carries one; per-service
    adoption pattern documented. This unlocks every other item.
-2. **OAPEC-2 auth** (the user's first named case): the missing 95
+2. **auth** (the user's first named case): the missing 95
    pairs - OAuth protocol family, SCIM, MFA/passkey, password/email
    flows, SSO/SAML browser loop, consent proxy, sessions/branding,
    app-passwords, security profile, delegation, wallet/credential
@@ -250,25 +250,25 @@ entries only), unannotated-heavy services after.
    unlisted), webhooks replay, RFW admin-UI, the Shield policy surface
    (shared, via (1)), plus the duplicate `GET /v1/admin/groups/{id}`
    binding documented; `GET /v1/health` annotated. Then regen dump.
-3. **OAPEC-3 platform services, spec-owning** (sys, bus, db, storage,
+3. **platform services, spec-owning** (sys, bus, db, storage,
    post, stat, secrets, func, cron, flow, acme, ai, app): add missing
    internal/data/admin-UI/health operations, stale-path cleanup (sys's
    invitations/hostname/archive surface, storage's `{*object_path}`
    form, app's `setup/{id}` path form), and the drift-guard test wired.
-4. **OAPEC-4 bank8** (ledger 53 missing, payments 114, fdx 58,
+4. **bank8** (ledger 53 missing, payments 114, fdx 58,
    reporting/risk/compliance) - the fdx FDX-v6 API family is the
    priority; payments' v1beta/retired spec paths pruned to code truth.
-5. **OAPEC-5 bill8 + email8** (small deltas + email8-store's JMAP
+5. **bill8 + email8** (small deltas + email8-store's JMAP
    surface and 21 internal data APIs; email8-access and email8-mta gain
    their first specs).
-6. **OAPEC-6 hotel8** (pms 147, pos 72, distrib 25, loyalty 23,
+6. **hotel8** (pms 147, pos 72, distrib 25, loyalty 23,
    upsell 28; hotel8-meta gains its first spec) - dominated by
    high-volume pms/pos annotation.
-7. **OAPEC-7 trade8 + exchange8 - first specs from scratch**: each
+7. **trade8 + exchange8 - first specs from scratch**: each
    service gains `src/openapi.rs` (spec struct + annotations on all
    `main.rs` routers), `docs/openapi.json` dump, and the drift guard.
    Largest single step (20 services), but mechanical.
-8. **OAPEC-8 tree sweep + CI**: run the drift-guard test across all
+8. **tree sweep + CI**: run the drift-guard test across all
    services in one CI lane addition; the site harvest re-run publishes
    the corrected API pages (7 sites); root design-site OQ-4 note
    updated with the enforcement mechanism.

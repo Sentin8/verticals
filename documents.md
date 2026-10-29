@@ -66,30 +66,30 @@ graph TD
 ###### 7. Unresolved Questions / Future DesignsWhat edge cases or future scale requirements are omitted from this current design phase?
 
 ------------------------------
-## 4. DESIGN.md — Detailed Design Document (DDD)
+## 4. DESIGN.md  -  Detailed Design Document (DDD)
 
 Every service (and every non-trivial crate) ships a `DESIGN.md` alongside its
 `README.md`. The two documents have strictly separated responsibilities:
 
 | Document | Role | Depth | Audience |
 |---|---|---|---|
-| `README.md` | Overview: what the service is, why it exists, how it fits the platform | Sections 1–7 of the template in §3 | Anyone evaluating or onboarding to the service |
+| `README.md` | Overview: what the service is, why it exists, how it fits the platform | Sections 1 - 7 of the template in §3 | Anyone evaluating or onboarding to the service |
 | `DESIGN.md` | Detailed Design Document (DDD): how the service is built, wire-level and table-level | Deep, implementation-complete | Maintainers, reviewers, and architects modifying the service |
 
 Rules for both documents:
-* **Greenfield only** — no migration paths, historical decisions, dates/times, deprecation notices, or backlog ticket numbers.
-* **Design-first** — `DESIGN.md` is updated in the same change as the design/backlog update (AGENTS.md "Design-first" rule); code follows, never leads.
+* **Greenfield only**  -  no migration paths, historical decisions, dates/times, deprecation notices, or backlog ticket numbers.
+* **Design-first**  -  `DESIGN.md` is updated in the same change as the design/backlog update (AGENTS.md "Design-first" rule); code follows, never leads.
 * **Comments reference `DESIGN.md`**, not internal tickets (the "Reference Rule" from Step 3).
-* **Reality over plans** — describe only what is implemented at its final target state (no phases, waves, or staged rollouts).
+* **Reality over plans**  -  describe only what is implemented at its final target state (no phases, waves, or staged rollouts).
 
 ### 4.1 Mandatory Structure of DESIGN.md
 
-`DESIGN.md: [Service or Crate Name] — Detailed Design Document`
+`DESIGN.md: [Service or Crate Name]  -  Detailed Design Document`
 
 ###### 1. Scope & Context
 What the service owns (resources, tables, event families) and what it explicitly
 does NOT own (delegate to other services). Include the **System Context diagram**
-and the **Container diagram** (C4 level 1–2) showing every dependency direction.
+and the **Container diagram** (C4 level 1 - 2) showing every dependency direction.
 
 ###### 2. Runtime Architecture
 The full component breakdown inside the service: routers, handlers, domain
@@ -161,48 +161,48 @@ a diagram **before** (or instead of) prose. Minimum required diagram set:
 Diagram authoring rules:
 * **One mechanism, one diagram.** Do not overload a single graph with unrelated
   flows; split by request family or lifecycle.
-* **Label edges with the contract** — protocol + auth + data (e.g.
+* **Label edges with the contract**  -  protocol + auth + data (e.g.
   `M2M token / POST /v1/produce`), not bare arrows.
-* **Name real identifiers** — table names, endpoint paths, event types
+* **Name real identifiers**  -  table names, endpoint paths, event types
   (`vertical:service:resource:operation`), header names as implemented.
-* **Show failure branches** — every happy-path sequence diagram includes its
+* **Show failure branches**  -  every happy-path sequence diagram includes its
   error/retry branch; a diagram with only success paths is incomplete.
-* **Subgraphs for trust boundaries** — group processes that share a security
+* **Subgraphs for trust boundaries**  -  group processes that share a security
   context; draw cross-boundary edges explicitly.
-* **Keep diagrams renderable** — mermaid v10+ syntax, quoted labels containing
+* **Keep diagrams renderable**  -  mermaid v10+ syntax, quoted labels containing
   special characters, no HTML in labels, no comments inside blocks that break
   GitHub/mdBook rendering.
-* **Style discipline** — consistent node naming with the README's diagrams
+* **Style discipline**  -  consistent node naming with the README's diagrams
   (same component names, same colors/prefix conventions where used), so the
   README overview and DESIGN.md deep-dive can be read together without
   translation.
 
 ------------------------------
-## 5. BUSINESS.md — Business Requirements Document (BRD)
+## 5. BUSINESS.md  -  Business Requirements Document (BRD)
 
 Every service ships a `BUSINESS.md` alongside its `README.md` and `DESIGN.md`.
 Where `README.md` explains the architecture and `DESIGN.md` explains the
 wire-level construction, `BUSINESS.md` details **all the functionality the
-service provides** in business terms — what the service does, for whom, under
+service provides** in business terms  -  what the service does, for whom, under
 which guarantees, and what "done" looks like for the business.
 
 | Document | Role | Depth | Audience |
 |---|---|---|---|
-| `README.md` | Overview: what the service is, why it exists, how it fits the platform | Sections 1–7 of the template in §3 | Anyone evaluating or onboarding to the service |
+| `README.md` | Overview: what the service is, why it exists, how it fits the platform | Sections 1 - 7 of the template in §3 | Anyone evaluating or onboarding to the service |
 | `DESIGN.md` | Detailed Design Document (DDD): how the service is built, wire-level and table-level | Deep, implementation-complete | Maintainers, reviewers, and architects modifying the service |
-| `BUSINESS.md` | Business Requirements Document (BRD): all functionality the service provides — capabilities, business rules, events, use cases, KPIs, acceptance criteria | Functional, business-language | Product owners, business analysts, and anyone evaluating what the service does for the business |
+| `BUSINESS.md` | Business Requirements Document (BRD): all functionality the service provides  -  capabilities, business rules, events, use cases, KPIs, acceptance criteria | Functional, business-language | Product owners, business analysts, and anyone evaluating what the service does for the business |
 
 Rules for `BUSINESS.md`:
 
-* **Always kept up to date** — like `README.md` and `DESIGN.md`, `BUSINESS.md` is refreshed in the same change as the design/backlog update and the code; it never trails the code. Every capability the code ships appears in `BUSINESS.md` in the same change.
-* **Greenfield only / reality over plans** — no migration paths, historical decisions, dates/times, deprecation notices, or backlog ticket numbers; describe only what is implemented at its final target state.
-* **Business language** — capabilities, rules, and outcomes written for a non-architect audience; real identifiers (event names, endpoint paths, table names) appear only where they are the business contract.
-* **Cross-reference, never duplicate** — architecture points to `README.md`, wire-level detail to `DESIGN.md`; `BUSINESS.md` states the functionality, not the mechanism.
+* **Always kept up to date**  -  like `README.md` and `DESIGN.md`, `BUSINESS.md` is refreshed in the same change as the design/backlog update and the code; it never trails the code. Every capability the code ships appears in `BUSINESS.md` in the same change.
+* **Greenfield only / reality over plans**  -  no migration paths, historical decisions, dates/times, deprecation notices, or backlog ticket numbers; describe only what is implemented at its final target state.
+* **Business language**  -  capabilities, rules, and outcomes written for a non-architect audience; real identifiers (event names, endpoint paths, table names) appear only where they are the business contract.
+* **Cross-reference, never duplicate**  -  architecture points to `README.md`, wire-level detail to `DESIGN.md`; `BUSINESS.md` states the functionality, not the mechanism.
 
 Standard header:
 
 ```markdown
-# [Service Name] — Business Requirements & Functionality
+# [Service Name]  -  Business Requirements & Functionality
 
 > Audience: product owners, business analysts, and anyone evaluating what
 > [Service] **does for the business**. For architecture read `README.md`;
@@ -211,13 +211,13 @@ Standard header:
 
 ### 5.1 Mandatory Structure of BUSINESS.md
 
-`BUSINESS.md: [Service or Crate Name] — Business Requirements & Functionality`
+`BUSINESS.md: [Service or Crate Name]  -  Business Requirements & Functionality`
 
 ###### 1. Business Purpose
 The business value the service delivers and the problems it solves, as bullets.
 
 ###### 2. Business Scope (What the Service Provides)
-A capability table covering ALL provided functionality (intake, delivery, admin surfaces, scheduled work, events), followed by **What the service does NOT own (business boundary)** — an out-of-scope table naming the owning service for each delegated concern.
+A capability table covering ALL provided functionality (intake, delivery, admin surfaces, scheduled work, events), followed by **What the service does NOT own (business boundary)**  -  an out-of-scope table naming the owning service for each delegated concern.
 
 ###### 3. Business Capabilities
 Per-area tables stating the business rule behind each capability.

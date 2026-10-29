@@ -47,13 +47,13 @@ graph TD
             V3["commerce8, Email8-dev,<br/>Exchange8-dev, Trade8-dev, Health8"]
         end
     end
-    PLAT -- "uses @ci-v1" --> CI
-    V1 -- "uses @ci-v1" --> CI
-    V2 -- "uses @ci-v1" --> CI
-    V3 -- "uses @ci-v1" --> CI
-    ROOT -- "nightly calls" --> CI
-    CI -- "repository_dispatch<br/>(App token, gated)" --> PLAT
-    CI -- "repository_dispatch" --> V1
+    PLAT - "uses @ci-v1" -> CI
+    V1 - "uses @ci-v1" -> CI
+    V2 - "uses @ci-v1" -> CI
+    V3 - "uses @ci-v1" -> CI
+    ROOT - "nightly calls" -> CI
+    CI - "repository_dispatch<br/>(App token, gated)" -> PLAT
+    CI - "repository_dispatch" -> V1
 ```
 
 **Why a central repo works**: reusable workflows from a **public** repo
@@ -93,16 +93,16 @@ sequenceDiagram
     Repo->>CI: caller workflow uses: rust.yml / flutter-app.yml / e2e-repo.yml / docs-group.yml
     CI->>CI: toolchain 1.98.1 (rust-toolchain.toml wins)
     CI->>CI: Swatinem/rust-cache (deps only, lockfile+toolchain key)
-    CI->>CI: SQLX_OFFLINE=true cargo build --workspace (BLOCKING)
-    CI->>CI: cargo test --workspace (BLOCKING, DB tests runtime-skip)
-    CI->>CI: cargo fmt --check (ADVISORY) · cargo clippy (ADVISORY)
+    CI->>CI: SQLX_OFFLINE=true cargo build -workspace (BLOCKING)
+    CI->>CI: cargo test -workspace (BLOCKING, DB tests runtime-skip)
+    CI->>CI: cargo fmt -check (ADVISORY) · cargo clippy (ADVISORY)
     CI-->>Repo: required checks: build, test (class-specific)
 ```
 
-Blocking vs advisory (measured 2026-10-14): fmt drift is 800–1000 files in
+Blocking vs advisory (measured 2026-10-14): fmt drift is 800 - 1000 files in
 verticals, clippy `-D warnings` yields 78 errors in `sentin8-auth` alone -
 **build and test block; fmt and clippy report** until the debt stories
-(CICD-5) land, then the reusable workflow flips one input to blocking.
+ land, then the reusable workflow flips one input to blocking.
 `SQLX_OFFLINE=true` is mandatory everywhere (a live `DATABASE_URL` makes
 sqlx macros hit the cert-gated DB and fail compilation - verified).
 
@@ -120,7 +120,7 @@ Flutter lane: `flutter-version: 3.47.2` exact pin, `cache: true` +
 the pubspec-declared location (outside the workspace - checkout
 `path` is workspace-relative, a run-step clone is not constrained);
 `flutter analyze` (advisory while info-debt exists - fatal-infos is
-the default and dash carries 31 info findings; CICD-5 flips it) →
+the default and dash carries 31 info findings flips it) →
 `flutter test` (blocking) → `flutter build web
 --no-tree-shake-icons` (blocking - the RFW renderer's dynamic
 IconData hex code points require it) + `build/web` artifact upload.
@@ -129,17 +129,17 @@ IconData hex code points require it) + `build/web` artifact upload.
 
 ```mermaid
 flowchart TD
-    T["tag push sdk-v0.6.4<br/>(sentin8-sdk)"] --> R["release.yml caller<br/>on: push: tags"]
-    R --> RW["sdk-release.yml@ci-v1<br/>release build + test"]
-    RW --> G{"SENTIN8_CI_APP_ID<br/>set in org?"}
-    G -- "no" --> SKIP["cascade step skips<br/>(graceful no-op)"]
-    G -- "yes" --> APP["create-github-app-token<br/>(App installed in all 8 orgs)"]
-    APP --> FAN["fan-out from consumers.json:<br/>repository_dispatch sdk-released<br/>payload {sdk-repo, tag}"]
-    FAN --> C1["consumer repo A<br/>sdk-bump.yml receiver"]
-    FAN --> C2["consumer repo B<br/>sdk-bump.yml receiver"]
-    C1 --> B1["rewrite EVERY pin line pointing<br/>at the SDK repo (one tag serves<br/>many crates), cargo update,<br/>build+test"]
-    B1 --> PR["create-pull-request<br/>chore: bump sentin8-sdk to sdk-v0.6.4"]
-    PR --> MRC["PR merges → consumer CI runs →<br/>its own release.yml if it is<br/>an SDK/mini-facade → ring continues"]
+    T["tag push sdk-v0.6.4<br/>(sentin8-sdk)"] -> R["release.yml caller<br/>on: push: tags"]
+    R -> RW["sdk-release.yml@ci-v1<br/>release build + test"]
+    RW -> G{"SENTIN8_CI_APP_ID<br/>set in org?"}
+    G - "no" -> SKIP["cascade step skips<br/>(graceful no-op)"]
+    G - "yes" -> APP["create-github-app-token<br/>(App installed in all 8 orgs)"]
+    APP -> FAN["fan-out from consumers.json:<br/>repository_dispatch sdk-released<br/>payload {sdk-repo, tag}"]
+    FAN -> C1["consumer repo A<br/>sdk-bump.yml receiver"]
+    FAN -> C2["consumer repo B<br/>sdk-bump.yml receiver"]
+    C1 -> B1["rewrite EVERY pin line pointing<br/>at the SDK repo (one tag serves<br/>many crates), cargo update,<br/>build+test"]
+    B1 -> PR["create-pull-request<br/>chore: bump sentin8-sdk to sdk-v0.6.4"]
+    PR -> MRC["PR merges → consumer CI runs →<br/>its own release.yml if it is<br/>an SDK/mini-facade → ring continues"]
 ```
 
 Mechanics (all from research, enforced by design):
@@ -152,7 +152,7 @@ Mechanics (all from research, enforced by design):
   time - every caller run died before spawning a single job with
   "This run likely failed because of a workflow file issue" (zero jobs,
   no logs), which made the ENTIRE release lane red on every SDK repo
-  since CICD-4 while every `ci.yml` lane stayed green (its `rust.yml`
+  since while every `ci.yml` lane stayed green (its `rust.yml`
   reusable carries no such gate). The fix re-expresses the gate with
   constructs `if:` supports: the mint step runs unconditionally with
   `continue-on-error: true` (empty secrets fail it harmlessly) and the
@@ -203,7 +203,7 @@ Lives in the root `Sentin8/verticals` repo: `schedule` (03:00 UTC) +
    generated: org/name/class per repo), exact disk layout (RS §4.4) so
    every relative path (path deps, compose mounts, Makefile `../.env`)
    resolves.
-2. DAG build - per-repo `cargo build --release --locked` in RS §2.5
+2. DAG build - per-repo `cargo build -release -locked` in RS §2.5
    order (platform SDK → starters → 17 platform services → vertical
    SDKs → vertical services; the vertical group Makefiles hardcode
    the debug profile, so the nightly drives cargo directly),
@@ -240,7 +240,7 @@ Lives in the root `Sentin8/verticals` repo: `schedule` (03:00 UTC) +
    CanvasKit page harvest); `bank8-e2e`: full lifecycle. Reports +
    traces uploaded `if: !cancelled()`.
 9. Pin-freshness audit (advisory) - every git-tag pin in every
-   `Cargo.toml` vs `git ls-remote --tags` of its repo: report stale pins
+   `Cargo.toml` vs `git ls-remote -tags` of its repo: report stale pins
    (the manual cascade's blind spot).
 10. Teardown - `make -C sentin8 stop`, `docker compose down`.
 
@@ -266,7 +266,7 @@ supported; refuses to touch non-git directories.
 ### 2.5 Versioning
 
 The ci repo tags `ci-v1` (major bump = breaking workflow input change);
-all ~98 callers pin `@ci-v1`. Rollout order (operator checklist, CICD-4):
+all ~98 callers pin `@ci-v1`. Rollout order (operator checklist,):
 (1) create `Sentin8/sentin8-ci` **public** + push + tag `ci-v1`; (2) add
 the allowlist entry `Sentin8/sentin8-ci/**` in each of the 8 orgs' Actions
 settings; (3) commit callers per repo (done by the sync run) and push;
@@ -280,25 +280,25 @@ pull-requests:write on all orgs), set the two org secrets.
 
 ## 3. Invariants
 
-- **CICD-1** No repo's pipeline duplicates logic: every workflow is a thin
+- **** No repo's pipeline duplicates logic: every workflow is a thin
   caller into `Sentin8/sentin8-ci@ci-v1`; logic changes happen in one tag.
-- **CICD-2** CI needs no product secrets: public repos (anonymous fetch)
+- **** CI needs no product secrets: public repos (anonymous fetch)
   + certificate identity (TLS minted per run) + generated dev keys. The
   only credentials are the optional cascade App secrets.
-- **CICD-3** `SQLX_OFFLINE=true` on every compile in CI; live-DB testing
+- **** `SQLX_OFFLINE=true` on every compile in CI; live-DB testing
   happens only in the aggregation nightly.
-- **CICD-4** Blocking checks are honest: `build`/`test` block; fmt/clippy
+- **** Blocking checks are honest: `build`/`test` block; fmt/clippy
   stay advisory while debt exists (flip is a story, not a flag day).
-- **CICD-5** The cascade never fires unauthenticated: no App secret →
+- **** The cascade never fires unauthenticated: no App secret →
   the dispatch step is skipped, never silently half-run.
-- **CICD-6** Caller files are generated, never hand-edited; the sync
-  script is the only writer (`sync-ci.py --check` is the drift gate).
+- **** Caller files are generated, never hand-edited; the sync
+  script is the only writer (`sync-ci.py -check` is the drift gate).
 
 ## 4. Open questions
 
 1. First real nightly run will iterate (runner DNS quirks, fleet memory
    ceiling on 16 GB, bootstrap timing) - budget a tuning pass.
-2. e2e typecheck debt (`tsc --noEmit` currently red in sentin8-e2e) -
+2. e2e typecheck debt (`tsc -noEmit` currently red in sentin8-e2e) -
   advisory until fixed, tracked with the lint debt story.
 3. Health8 has repos planned but none exist yet; sync script picks them
    up automatically when they appear.

@@ -10,7 +10,7 @@
 ## 1. Problem & goal
 
 The repositories are about to become public. Their existing histories
-(2–16 commits each, ~40 MiB total) contain internal ticket references,
+(2 - 16 commits each, ~40 MiB total) contain internal ticket references,
 operator notes, and iteration noise that must not ship with the public
 repos. The published state must look like a single fresh import:
 
@@ -51,18 +51,18 @@ repos. The published state must look like a single fresh import:
 
 ```mermaid
 flowchart TD
-    A[pre-flight assertions<br/>tracked-ignored = none,<br/>node_modules ignored,<br/>push auth OK] --> B{repo has pins?}
-    B -- yes --> C[assert every pinned SDK<br/>already snapshotted]
-    B -- no --> D
-    C --> D[rewrite Cargo.lock git-source revs<br/>old → new via the map]
-    D --> E[checkout --orphan + clear index<br/>+ add -A → index == worktree]
-    E --> F[commit 'Sync from SVN and remove<br/>client/project-related code.']
-    F --> G[delete old main, rename orphan → main]
-    G --> H[delete ALL tags,<br/>re-create this repo's pinned tags]
-    H --> I[reflog expire + gc --prune=now]
-    I --> J[record new SHA + tags in the map]
-    J --> K[push: --force main,<br/>new tags, delete stale remote tags]
-    K --> L[verify: 1 commit, message,<br/>tags, lock revs, remote refs]
+    A[pre-flight assertions<br/>tracked-ignored = none,<br/>node_modules ignored,<br/>push auth OK] -> B{repo has pins?}
+    B - yes -> C[assert every pinned SDK<br/>already snapshotted]
+    B - no -> D
+    C -> D[rewrite Cargo.lock git-source revs<br/>old → new via the map]
+    D -> E[checkout -orphan + clear index<br/>+ add -A → index == worktree]
+    E -> F[commit 'Sync from SVN and remove<br/>client/project-related code.']
+    F -> G[delete old main, rename orphan → main]
+    G -> H[delete ALL tags,<br/>re-create this repo's pinned tags]
+    H -> I[reflog expire + gc -prune=now]
+    I -> J[record new SHA + tags in the map]
+    J -> K[push: -force main,<br/>new tags, delete stale remote tags]
+    K -> L[verify: 1 commit, message,<br/>tags, lock revs, remote refs]
 ```
 
 - The index is cleared before `add -A`, so the snapshot is exactly the
@@ -84,7 +84,7 @@ flowchart TD
 
 ## 5. Post-conditions
 
-1. Every repo: `git rev-list --count main` = 1; message exact; worktree
+1. Every repo: `git rev-list -count main` = 1; message exact; worktree
    clean.
 2. Tag set per repo = its pinned tags, all pointing at the snapshot.
 3. Every `Cargo.lock` git-source rev matches the pushed tags; spot
@@ -97,4 +97,4 @@ flowchart TD
 - GitHub-side purge of unreachable old commits (delete-and-recreate the
   repos, or GitHub Support) - the owner chose force-push.
 - Any content changes: the wipe folds the tree as-is; the lint-debt and
-  stale-pin normalization stories (CICD-5) stay in the backlog.
+  stale-pin normalization stories stay in the backlog.

@@ -76,16 +76,16 @@ graph TD
         D6["bill8.dev"]
         D7["email8.dev"]
     end
-    ENGINE -- "git tag pin (npm)" --> S8 & B8 & H8 & X8 & T8 & BL8 & E8
-    REPOS -- "harvest at build time<br/>(raw.githubusercontent.com)" --> S8 & B8 & H8 & X8 & T8 & BL8 & E8
-    CI -- "build + deploy" --> S8 & B8 & H8 & X8 & T8 & BL8 & E8
-    S8 --> D1
-    B8 --> D2
-    H8 --> D3
-    X8 --> D4
-    T8 --> D5
-    BL8 --> D6
-    E8 --> D7
+    ENGINE - "git tag pin (npm)" -> S8 & B8 & H8 & X8 & T8 & BL8 & E8
+    REPOS - "harvest at build time<br/>(raw.githubusercontent.com)" -> S8 & B8 & H8 & X8 & T8 & BL8 & E8
+    CI - "build + deploy" -> S8 & B8 & H8 & X8 & T8 & BL8 & E8
+    S8 -> D1
+    B8 -> D2
+    H8 -> D3
+    X8 -> D4
+    T8 -> D5
+    BL8 -> D6
+    E8 -> D7
 ```
 
 ## 2. Framework decision - Docusaurus v3
@@ -244,7 +244,7 @@ data edit + optional hand-authored pages.
 | `/docs/security/` | Vertical-specific posture + the inherited pillars (link) |
 | `/docs/samples/` | Code tabs against the vertical's APIs |
 
-Verticals with 4–15 products combine overview+use-cases+API into one rich
+Verticals with 4 - 15 products combine overview+use-cases+API into one rich
 product page; ALL get the embedded DESIGN/BUSINESS/SECURITY sub-pages
 regardless (the dossier is mandatory - owner decision 2026-10-15: the full
 business and design detail must be part of every product page).
@@ -368,7 +368,7 @@ excludes `node_modules` from Babel. Site-local pages may use JSX freely.
   rule), revisit per market.
 - **OQ-4 API spec pages - RESOLVED (2026-10-16)**: every spec-owning
   service ships its OpenAPI 3.1 spec as `docs/openapi.json` in its repo
-  (dumped via `--print-registration --section=openapi`); the site engine
+  (dumped via `--print-registration -section=openapi`); the site engine
   renders it at harvest time into a static `api.md` reference page
   (endpoint tables: gate scope, request body, parameters, responses) -
   one page per unit, in the product tree + reference tree like the other

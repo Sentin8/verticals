@@ -1,4 +1,4 @@
-# sentin8.new — Repository-Split Workspace
+# sentin8.new - Repository-Split Workspace
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](../LICENSE)
 [![Built with Rust](https://img.shields.io/badge/Built%20with-Rust-orange.svg)](https://www.rust-lang.org/)
 [![Docs](https://img.shields.io/badge/docs/read-3aa757.svg)](https://sentin8.dev/docs/services/platform)
@@ -8,13 +8,13 @@ This directory holds the **target state** of the platform after the
 repository split defined in `design/sentin8-repository-split-design.md`.
 
 The original monorepo (`../sentin8/`) is the read-only **source of truth**
-during migration — nothing in it is modified.
+during migration - nothing in it is modified.
 
-## Layout — seven group folders (RS §4.4)
+## Layout - seven group folders (RS §4.4)
 
 ```
 sentin8.new/
-├── sentin8/          # platform group — OWNS the docker infra (§2.2.1)
+├── sentin8/          # platform group - OWNS the docker infra (§2.2.1)
 │   ├── docker-compose.yml   # THE tree-wide dev PG 18 + Valkey
 │   ├── Makefile · README.md · DESIGN.md · BUSINESS.md
 │   ├── sentin8-sdk/         # the shared workspace (tag sdk-v0.1.0)
@@ -28,10 +28,10 @@ sentin8.new/
 ├── email8/   … 4 services · 1 app
 ├── exchange8/ … 14 services · 1 app
 ├── design/           # the split's design of record
-└── Makefile · backlog.md   # aggregation + split backlog
+└── Makefile · design/      # aggregation + split design corpus
 ```
 
-Group folders are **plain directories** — every child is an independent
+Group folders are **plain directories** - every child is an independent
 git repository named `{vertical}-{service}`. Vertical groups carry no
 compose files; they consume the platform's infra over localhost.
 
@@ -50,7 +50,7 @@ cd sentin8/sentin8-auth && cargo build
 ## Single-repo dev story
 
 Clone any one repo; `cargo build` fetches the SDK git tags
-(`sentin8-sdk` + the vertical's `{v}-sdk`) and builds — no sibling
+(`sentin8-sdk` + the vertical's `{v}-sdk`) and builds - no sibling
 checkouts, no platform tree, no live DB (committed `.sqlx` caches).
 
 ---

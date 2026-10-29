@@ -79,8 +79,8 @@ And the SDK keeps service-scoped crates it does not need to own:
    plane lives in its owner's repo behind a per-service mini-facade.
 6. The same treatment for every vertical: vertical contracts move to their
    owner service repos; the six `{vertical}-sdk` facade repos retire.
-7. Zero path dependencies (RS-1/RS-5 unchanged); build order SDK → starters
-   → services (RS-3) with the mini-facade repos built before their
+7. Zero path dependencies (/unchanged); build order SDK → starters
+   → services with the mini-facade repos built before their
    consumers.
 
 ### 1.3 System context - before → after
@@ -141,7 +141,7 @@ graph TD
 | | `sys-contracts` → sentin8-sys |
 | | `secrets` → sentin8-secrets |
 
-**The stay/move boundary is shared-plane linkage, not naming** (SDD-1):
+**The stay/move boundary is shared-plane linkage, not naming** :
 a crate moves iff no shared-plane crate links it. `auth-client` and
 `bus-client`/`bus-contracts`/`outbox` are service-named but force-stayed -
 `shell` links them (boot token verification, outbox relay), and moving them
@@ -363,31 +363,31 @@ graph TD
 
 **Invariants (SDD, extending RS):**
 
-- **SDD-1**: crate placement is decided by shared-plane linkage, not by
+- ****: crate placement is decided by shared-plane linkage, not by
   naming; `auth-client`, `bus-client`/`bus-contracts`/`outbox` stay in the
   SDK plane permanently.
-- **SDD-2**: service→service SDK pins are peer-level and crates-only; the
+- ****: service→service SDK pins are peer-level and crates-only; the
   shared plane never pins a service repo.
-- **SDD-3**: a mini-facade pins the shared SDK but nothing else; a consumer
+- ****: a mini-facade pins the shared SDK but nothing else; a consumer
   repo's manifest may pin any set of mini-facades.
-- **SDD-4**: every moved crate keeps its current crate name
+- ****: every moved crate keeps its current crate name
   (`sentin8-flow-client`); only the import first-segment changes.
 - **SDD-4a**: a mini-facade is named `{svc}-sdk`; its package is
   `sentin8-{svc}-sdk` and its repo directory is `sdk/`.
 - **SDD-4b**: a mini-facade has no logic - only `pub use` re-exports of the
   crates it hosts (client, contracts). No feature flags, no facade cycles.
-- **SDD-5**: version rings: the shared SDK tags `sdk-vX.Y.Z` as today; each
+- ****: version rings: the shared SDK tags `sdk-vX.Y.Z` as today; each
   mini-facade repo tags `{svc}-sdk-vX.Y.Z`. A contract change in service X
   spins only X's ring; consumers bump X's pin.
-- **SDD-6**: the platform facade `sentin8` never re-exports a mini-facade
+- ****: the platform facade `sentin8` never re-exports a mini-facade
   (would invert the DAG - facade would pin service repos).
-- **SDD-7**: the `{vertical}` facade crate names (`bank8`, `hotel8`, …)
+- ****: the `{vertical}` facade crate names (`bank8`, `hotel8`, …)
   retire with their repos - no stale aggregator names survive the move
   (§3.4).
 
 ### 3.4 Verticals - identical treatment, scoped by the same boundary rule
 
-The same rule applies one level down (SDD-1: placement by shared-plane
+The same rule applies one level down (placement by shared-plane
 linkage, not naming), which measurement splits into two classes:
 
 - **Shared vertical planes STAY as `{vertical}-sdk`** - trade8 (143
@@ -409,7 +409,7 @@ linkage, not naming), which measurement splits into two classes:
   (`bank8-ledger-contracts`, `bank8-payments-contracts`, `bank8-fdx-contracts`,
   `bank8-regulatory-contracts`, …) move into the owner repos.
 - Import shape is preserved: `use bank8::ledger::contracts::…` becomes
-  `use bank8_ledger_sdk::contracts::…` (SDD-4 shape rule, first segment
+  `use bank8_ledger_sdk:: contracts:: …` (shape rule, first segment
   change only).
 - **The `{vertical}` crate names retire** - after the dissolution there is no
   `bank8` crate; consumers import `bank8_ledger_sdk::contracts::…` directly.
